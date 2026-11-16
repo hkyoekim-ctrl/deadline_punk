@@ -202,49 +202,208 @@
     px(c, K, x1 - 1, y1 - 1, 3, 3); px(c, col.head, x1, y1);
   }
 
+  // 기타·베이스를 몸통+넥+헤드 한 덩어리로, 원하는 각도로 1배 픽셀에 찍음(꺾임 없음)
+  //   (ox,oy) = 바디 끝점, ang = 넥 방향(도, 0=오른쪽, 90=위)
+  const GTR = {
+    guitar: { L: 18.5, neck: 6.0, body: '#c9ced6', dark: '#9aa1ad', hl: '#eef1f5', guard: '#26232f', pick: '#eef1f5', fb: ['#7a4a2e', '#9a6440'], dot: '#f4f4f4', head: '#26232f', tuner: '#e8e8ee' },
+    bass:   { L: 20, neck: 6.4, body: '#f2efe6', dark: '#c9c3b2', hl: '#ffffff', guard: '#7fd4c0', pick: '#26232f', fb: ['#c98f4e', '#e0b46a'], dot: '#26232f', head: '#e0b46a', tuner: '#e8e8ee' },
+  };
+  function gtrPart(id, u, v) {
+    const g = GTR[id], a = Math.abs(v);
+    if (u < 0 || u > g.L) return null;
+    if (u > g.L - 2.6) return a < 1.05 ? 'head' : null;
+    if (u > g.neck) {
+      if (a < 1.0) return 'neck';
+      if (id === 'guitar' && u < 7.8 && a >= 1.0 && a < 3.6 && u > 6.2 - (a - 1) * 0.3) return a < 1.6 ? null : 'body';   // SG 양쪽 뿔
+      if (id === 'bass' && u < 8.6 && v < -1.2 && v > -4.0 - (u - 6.6) * 0.2) return 'body';                          // 베이스 위쪽 긴 뿔
+      if (id === 'bass' && u < 7.2 && v > 1.2 && v < 3.4) return 'body';
+      return null;
+    }
+    let w;
+    if (id === 'guitar') w = u < 0.9 ? 3.0 : u < 5.6 ? 4.0 : 3.6;
+    else w = u < 0.9 ? 3.4 : u < 3.6 ? 4.6 : u < 5.0 ? 3.7 : 4.0;
+    return a < w ? 'body' : null;
+  }
+  function gtrColor(id, part, u, v) {
+    const g = GTR[id], a = Math.abs(v);
+    if (part === 'head') return g.head;
+    if (part === 'neck') {
+      const k = Math.floor((u - g.neck) / 1.5);
+      if ((k === 2 || k === 4 || k === 6) && v < 0 && v > -1) return g.dot;
+      return g.fb[k % 2];
+    }
+    // 바디
+    if (id === 'guitar') {
+      if (u > 2.2 && u < 6.0 && a < 1.8) return g.guard;
+      if (u > 1.0 && u < 2.0 && a < 1.4) return g.pick;
+    } else {
+      if (u > 3.4 && u < 4.4 && a < 1.3) return g.pick;
+      if (u > 2.6 && u < 7 && v > -2.6 && v < 0.8) return g.guard;
+      if (u > 0.8 && u < 1.6 && a < 1.4) return '#e8e8ee';
+    }
+    return v > 2.4 ? g.dark : v < -2.6 ? g.hl : g.body;
+  }
+  function drawGuitar(c, id, ox, oy, ang) {
+    const r = ang * Math.PI / 180, dx = Math.cos(r), dy = -Math.sin(r), nx = -dy, ny = dx;
+    const L = GTR[id].L, cells = new Map();
+    const x0 = Math.floor(Math.min(ox, ox + dx * L) - 6), x1 = Math.ceil(Math.max(ox, ox + dx * L) + 6);
+    const y0 = Math.floor(Math.min(oy, oy + dy * L) - 6), y1 = Math.ceil(Math.max(oy, oy + dy * L) + 6);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const qx = x + 0.5 - ox, qy = y + 0.5 - oy, u = qx * dx + qy * dy, v = qx * nx + qy * ny;
+      const part = gtrPart(id, u, v);
+      if (part) cells.set(x + ',' + y, [part, gtrColor(id, part, u, v)]);
+    }
+    // 외곽선 + 헤드 옆 줄감개
+    const out = new Map();
+    for (const key of cells.keys()) {
+      const [x, y] = key.split(',').map(Number);
+      for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const k2 = (x + ax) + ',' + (y + ay);
+        if (cells.has(k2) || out.has(k2)) continue;
+        out.set(k2, cells.get(key)[0] === 'head' && ((x + ax + y + ay) % 2 === 0) ? GTR[id].tuner : K);
+      }
+    }
+    for (const [key, col] of out) { const [x, y] = key.split(',').map(Number); px(c, col, x, y); }
+    for (const [key, [, col]] of cells) { const [x, y] = key.split(',').map(Number); px(c, col, x, y); }
+  }
+
+  // ── 고밀도 기타·베이스: 2배 캔버스에 직접. 몸통은 뿔·허리가 있는 다각형, 외곽선은 몸과 같은 2칸 두께
+  const GT2 = {
+    guitar: {
+      L: 31, neckU: 11.5, headU: 25.5, nw: 1.6,
+      poly: [[0, -3.4], [1, -5.6], [3, -6.6], [7.5, -6.6], [9.5, -5.6], [12.5, -5.8], [15.4, -5.4], [15.2, -4.2], [12.6, -2.4], [11.5, -1.6], [11.5, 1.6], [12.4, 2.4], [14.6, 4.0], [14.6, 5.2], [11.6, 5.6], [9.5, 5.6], [7.5, 6.6], [3, 6.6], [1, 5.6], [0, 3.4]],
+      body: '#c9ced6', dark: '#9aa1ad', hl: '#f4f6f9', guard: '#26232f', chrome: '#eef1f5', knob: '#8a8f9a',
+      fb: '#4a2e22', fret: '#c9ced6', dot: '#f4f4f4', head: '#26232f', logo: '#eef1f5', tuner: '#e8e8ee',
+      guardPoly: [[3.4, -2.8], [11.2, -2.8], [11.2, 2.8], [6, 3.6], [3.4, 2.6]],
+      pickups: [[5.2, 6.6], [8.6, 10]], bridge: [3.4, 4.2], knobs: [[2.2, 3.8], [3.8, 5.0], [5.6, 5.2]],
+    },
+    bass: {
+      L: 33, neckU: 11.5, headU: 27.5, nw: 1.7,
+      poly: [[0, -3.6], [1, -6.0], [3, -7.0], [6.5, -7.0], [8.5, -5.6], [10, -5.6], [13, -6.8], [16, -6.4], [16.2, -5.2], [12.8, -2.6], [11.5, -1.7], [11.5, 1.7], [12.4, 2.4], [14.2, 3.8], [14.0, 5.0], [11.4, 5.0], [9.5, 5.4], [7, 7.0], [3, 7.0], [1, 6.0], [0, 3.6]],
+      body: '#f2efe6', dark: '#c9c3b2', hl: '#ffffff', guard: '#7fd4c0', chrome: '#e8e8ee', knob: '#9aa1ad',
+      fb: '#e0b46a', fret: '#a8834a', dot: '#26232f', head: '#e0b46a', logo: '#26232f', tuner: '#e8e8ee',
+      guardPoly: [[2.6, -4.6], [10.6, -4.4], [12, -2.4], [11.6, 2.6], [7, 3.8], [4, 3.2], [2.6, 1.6]],
+      pickups: [[7.4, 8.8]], bridge: [2.8, 3.6], knobs: [[2.0, 4.4], [3.6, 5.4]],
+    },
+  };
+  function inPoly(P, u, v) { let r = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [ui, vi] = P[i], [uj, vj] = P[j]; if ((vi > v) !== (vj > v) && u < (uj - ui) * (v - vi) / (vj - vi) + ui) r = !r; } return r; }
+  function gt2Col(g, u, v) {
+    const a = Math.abs(v);
+    if (u >= g.headU) {   // 헤드: 끝으로 갈수록 살짝 넓어지는 비대칭 모양
+      const hw = 1.9 + (u - g.headU) * 0.18;
+      if (v < -hw || v > hw - 0.6 || u > g.L) return null;
+      if (u > g.headU + 2 && u < g.headU + 3.2 && v > -0.8 && v < 0.4) return g.logo;
+      return g.head;
+    }
+    if (u >= g.neckU) {
+      if (a >= g.nw && !inPoly(g.poly, u, v)) return null;
+      if (a < g.nw) {
+        const f = u - g.neckU;
+        if (u > g.headU - 0.9) return g.chrome;                         // 너트
+        if (f % 2.4 < 0.75 && f > 3) return g.fret;                     // 프렛
+        if ([5.1, 9.9, 14.7].some(d => Math.abs(f - d) < 0.7) && a < 0.9) return g.dot;
+        return g.fb;
+      }
+    } else if (!inPoly(g.poly, u, v)) return null;
+    // 몸통
+    if (g.pickups.some(([a0, a1]) => u > a0 && u < a1) && a < 2.3) return u - Math.floor(u) < 0.5 && a < 1.8 ? g.chrome : '#3b3846';
+    if (u > g.bridge[0] && u < g.bridge[1] && a < 2.0) return g.chrome;
+    if (g.knobs.some(([ku, kv]) => Math.hypot(u - ku, v - kv) < 0.75)) return g.knob;
+    if (inPoly(g.guardPoly, u, v)) return g.guard;
+    return v > 4.2 ? g.dark : v < -4.6 ? g.hl : g.body;
+  }
+  function drawGuitar2(c, id, ox, oy, ang) {
+    const g = GT2[id], r = ang * Math.PI / 180, dx = Math.cos(r), dy = -Math.sin(r), nx = -dy, ny = dx;
+    const cells = new Map(), R = g.L + 10;
+    for (let y = Math.floor(oy - R); y <= oy + R; y++) for (let x = Math.floor(ox - R); x <= ox + R; x++) {
+      const qx = x + 0.5 - ox, qy = y + 0.5 - oy, u = qx * dx + qy * dy, v = qx * nx + qy * ny;
+      if (u < 0 || u > g.L) continue;
+      const col = gt2Col(g, u, v);
+      if (col) cells.set(x + ',' + y, [col, u]);
+    }
+    // 외곽선 2칸(몸 그림 1배 외곽선과 같은 두께). 헤드 옆 첫 줄은 줄감개
+    const ring1 = new Map(), ring2 = new Map();
+    const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (const [key, [, u]] of cells) { const [x, y] = key.split(',').map(Number); for (const [ax, ay] of nb) { const k = (x + ax) + ',' + (y + ay); if (!cells.has(k) && !ring1.has(k)) ring1.set(k, u > g.headU + 0.6 && u < g.L - 0.5 && (x + ax + y + ay) % 3 === 0 ? g.tuner : K); } }
+    for (const key of ring1.keys()) { const [x, y] = key.split(',').map(Number); for (const [ax, ay] of nb) { const k = (x + ax) + ',' + (y + ay); if (!cells.has(k) && !ring1.has(k)) ring2.set(k, K); } }
+    for (const m of [ring2, ring1]) for (const [key, col] of m) { const [x, y] = key.split(',').map(Number); px(c, col, x, y); }
+    for (const [key, [col]] of cells) { const [x, y] = key.split(',').map(Number); px(c, col, x, y); }
+  }
+
+  // 1배(몸과 같은 픽셀 크기) 악기 그림
+  const MEGA1 = [
+    '......KK.',
+    '....KKWRK',
+    'KKKKWWWRK',
+    'KRKWWWWRY',
+    'KKKKhhhRK',
+    '.KMKKKhRK',
+    '.KMK..KK.',
+    '.KKK.....',
+  ];
+  const MEGA1_PAL = { K, W: '#f4f4f4', h: '#c9c9d4', R: '#e0201c', M: '#e2e2ea', Y: '#f5c518' };
+  const DRUM1 = [
+    '.KKKKK.',
+    'KWWWWWK',
+    'KYYYYYK',
+    'KRyRyRK',
+    'KRyRyRK',
+    '.KKKKK.',
+  ];
+  const DRUM1_PAL = { K, W: '#f7f3e8', Y: '#f5c518', y: '#b8860b', R: '#d4241c' };
+  const NECK1 = '#b5794a';
+  function stick(c, x0, y0, x1, y1) {
+    if (c.base) {   // 2배 캔버스: 2칸 굵기 나무 + 1칸 검은 테두리
+      const b = c.base, X0 = x0 * 2 + 0.5, Y0 = y0 * 2 + 0.5, X1 = x1 * 2 + 0.5, Y1 = y1 * 2 + 0.5;
+      stroke(b, K, X0 - 1, Y0 - 1, X1 - 1, Y1 - 1, 4);
+      stroke(b, '#e8c48a', X0, Y0, X1, Y1, 2); stroke(b, '#b08a50', X0 + 1, Y0 + 1, X1 + 1, Y1 + 1, 1);
+      px(b, K, Math.round(X1) - 2, Math.round(Y1) - 2, 5, 5); px(b, '#f7f3e8', Math.round(X1) - 1, Math.round(Y1) - 1, 3, 3);
+      return;
+    }
+    stroke(c, '#e8c48a', x0, y0, x1, y1, 1); px(c, '#f7f3e8', x1, y1);
+  }
+  // 넥: 2칸 올라갈 때 1칸 옆으로(또는 일직선)만 움직여 꺾여 보이지 않게
+  function neckLine(c, id, x0, y0, x1, y1) {
+    const col = INST_COL[id];
+    stroke(c, K, x0 + 1, y0, x1 + 1, y1, 1); stroke(c, K, x0 - 1, y0, x1 - 1, y1, 1); stroke(c, NECK1, x0, y0, x1, y1, 1);
+    px(c, K, x1 - 1, y1 - 2, 3, 3); px(c, col.head, x1, y1 - 1);
+  }
   function drawInstrument(c, id, hx, hy, pose) {
     const col = INST_COL[id];
     if (id === 'guitar' || id === 'bass') {
-      // pose 0: 넥을 위로 세워 치켜듦, 1: 앞으로 눕혀 내려침(바디는 손 쪽)
-      const L = id === 'bass' ? 13 : 11, rows = GUITAR_BODY[id];
-      if (pose === 0) {
-        drawNeck(c, id, hx + 1, hy - 1, hx + 2, Math.max(1, hy - L));
-        MP.paint(c, rows, hx - 2, hy - 1, bodyPal(id));
-      } else {
-        drawNeck(c, id, hx + 3, hy, Math.min(30, hx + 3 + L + 2), hy - 1);
-        const r = rotCW(rows); MP.paint(c, r, hx - 4, hy - 3, bodyPal(id));
-      }
+      if (pose === 0) drawGuitar(c, id, hx - 0.3, hy + 4.5, 82);
+      else drawGuitar(c, id, hx - 4.5, hy - 0.5, 0);
     } else if (id === 'keys') {
       if (pose === 0) { px(c, K, hx - 2, hy - 13, 6, 14); px(c, col.body, hx - 1, hy - 12, 4, 12); for (let y = hy - 11; y < hy; y += 2) px(c, K, hx + 1, y, 2, 1); }
       else { px(c, K, hx, hy - 3, 15, 6); px(c, col.body, hx + 1, hy - 2, 13, 4); for (let x = hx + 2; x < hx + 14; x += 2) px(c, K, x, hy - 2, 1, 2); }
     } else if (id === 'drums') {
-      const tips = pose === 0 ? [[-3, -11], [1, -12]] : [[11, -3], [12, 1]];
-      for (const [tx, ty] of tips) { stroke(c, K, hx, hy, hx + tx, hy + ty, 2); stroke(c, col.body, hx, hy, hx + tx, hy + ty, 1); }
-      if (pose === 1) { px(c, MP.PAL.Y, hx + 15, hy - 5, 1, 2); px(c, MP.PAL.Y, hx + 16, hy - 1, 2, 1); px(c, MP.PAL.Y, hx + 15, hy + 3, 1, 2); }
+      MP.paint(c, DRUM1, hx - 4, hy + 1, DRUM1_PAL);
+      if (pose === 0) { stick(c, hx - 1, hy, hx - 4, hy - 10); stick(c, hx + 1, hy, hx + 2, hy - 11); }
+      else { stick(c, hx, hy - 1, hx + 12, hy - 4); stick(c, hx, hy, hx + 12, hy + 1); px(c, MP.PAL.Y, hx + 15, hy - 5, 1, 2); px(c, MP.PAL.Y, hx + 16, hy - 1, 2, 1); px(c, MP.PAL.Y, hx + 15, hy + 3, 1, 2); }
     } else if (id === 'vocal') {
-      if (pose === 0) { px(c, K, hx - 2, hy - 8, 5, 9); px(c, col.body, hx - 1, hy - 7, 3, 7); px(c, K, hx - 3, hy - 10, 7, 3); px(c, col.body, hx - 2, hy - 9, 5, 1); }
+      if (pose === 0) MP.paint(c, rotCCW(MEGA1), hx - 3, hy - 11, MEGA1_PAL);
       else {
-        px(c, K, hx, hy - 2, 4, 4); px(c, col.body, hx + 1, hy - 1, 2, 2);
-        px(c, K, hx + 3, hy - 4, 4, 8); px(c, col.body, hx + 4, hy - 3, 2, 6); px(c, col.dark, hx + 4, hy + 1, 2, 1);
-        for (const r of [4, 7, 10]) { px(c, col.accent, hx + 6 + r, hy - r / 2 - 1, 1, 2); px(c, col.accent, hx + 7 + r, hy - 1, 1, 2); px(c, col.accent, hx + 6 + r, hy + r / 2, 1, 2); }
+        MP.paint(c, MEGA1, hx - 1, hy - 4, MEGA1_PAL);
+        for (const r of [4, 7, 10]) { px(c, col.accent, hx + 6 + r, hy - r / 2 - 2, 1, 2); px(c, col.accent, hx + 7 + r, hy - 1, 1, 2); px(c, col.accent, hx + 6 + r, hy + r / 2, 1, 2); }
       }
     }
   }
 
-  // 들고 달리기: back = 몸 뒤(기타·베이스는 등에 멤), 아니면 몸 앞(손에 듦)
+  // 들고 달리기(1배 좌표). 기타·베이스는 연주하듯 앞으로 멤
   function drawCarry(c, id, back, dy) {
     dy = dy || 0;
     const col = INST_COL[id];
-    if ((id === 'guitar' || id === 'bass') && back) {
-      const top = id === 'bass' ? 1 : 3;
-      drawNeck(c, id, 3, 12 + dy, 1, top + dy);
-      MP.paint(c, GUITAR_BODY[id], 0, 11 + dy, bodyPal(id));
-    } else if (!back && id === 'keys') {
+    if (back) return;
+    if (id === 'guitar' || id === 'bass') {
+      const bass = id === 'bass';
+      drawGuitar(c, id, bass ? 2.2 : 2.6, 19.2 + dy, 45);   // 바디와 넥을 같은 45도로
+    } else if (id === 'keys') {
       px(c, K, 7, 12 + dy, 9, 5); px(c, col.body, 8, 13 + dy, 7, 3); for (let x = 9; x < 15; x += 2) px(c, K, x, 13 + dy, 1, 2);
-    } else if (!back && id === 'drums') {
-      stroke(c, K, 12, 14 + dy, 15, 8 + dy, 1); stroke(c, col.body, 11, 14 + dy, 14, 8 + dy, 1); px(c, K, 13, 7 + dy, 2, 1);
-    } else if (!back && id === 'vocal') {
-      px(c, K, 11, 12 + dy, 3, 4); px(c, K, 13, 10 + dy, 3, 8); px(c, col.body, 14, 11 + dy, 1, 6); px(c, col.body, 12, 13 + dy, 2, 2); px(c, col.dark, 14, 15 + dy, 1, 1);
+    } else if (id === 'drums') {
+      MP.paint(c, DRUM1, 8, 13 + dy, DRUM1_PAL);
+      stick(c, 6, 8 + dy, 9, 13 + dy); stick(c, 15, 8 + dy, 13, 13 + dy);
+    } else if (id === 'vocal') {
+      MP.paint(c, MEGA1, 7, 10 + dy, MEGA1_PAL);
     }
   }
   const BACK = { guitar: true, bass: true };
@@ -419,43 +578,22 @@
   }
   // 들고 달리기(2배 좌표). dy는 1배 기준 위아래 이동
   // 1배 좌표 그리기를 2배 캔버스에 그대로 옮기는 래퍼(fillRect만 사용하는 그림용)
-  const x2 = c => ({ set fillStyle(v) { c.fillStyle = v; }, fillRect(x, y, w, h) { c.fillRect(x * 2, y * 2, w * 2, h * 2); } });
+  const x2 = c => ({ base: c, set fillStyle(v) { c.fillStyle = v; }, fillRect(x, y, w, h) { c.fillRect(x * 2, y * 2, w * 2, h * 2); } });
   function hdCarry(c, id, layer, dy) {
+    if (layer !== 'front') return;
     const d = (dy || 0) * 2;
-    if ((id === 'guitar' || id === 'bass') && layer === 'front') {
-      // 연주하듯 앞으로 맴: 바디는 허리 앞, 넥은 오른쪽 위로 비스듬히
-      hdNeck(c, id, 18, 31 + d, id === 'bass' ? 29 : 28, (id === 'bass' ? 9 : 12) + d);
-      MP.paint(c, MP_rotCW(HD_BODY[id]), 3, 25 + d, HD_PAL[id]);
-    } else if (layer === 'front' && id === 'keys') {
-      drawCarry(x2(c), 'keys', false, dy || 0); // 키보드는 기존 1배 그림을 2배로
-    } else if (layer === 'front' && id === 'drums') {
-      MP.paint(c, DRUM, 15, 27 + d, DRUM_PAL);
-      const up = (dy || 0) ? 2 : 0;   // 바운스 따라 스틱이 살짝 들썩
-      hdSticks(c, [[12, 18 + d - up, 19, 27 + d], [31, 17 + d + up, 25, 27 + d]]);
-      px(c, '#f7f3e8', 18, 26 + d, 2, 2); px(c, '#f7f3e8', 25, 26 + d, 2, 2);
-    } else if (layer === 'front' && id === 'vocal') {
-      MP.paint(c, MEGA, 16, 21 + d, MEGA_PAL);
-    }
+    if (id === 'guitar') drawGuitar2(c, id, 6.5, 40.5 + d, 46);
+    else if (id === 'bass') drawGuitar2(c, id, 7.5, 41.5 + d, 52);
+    else drawCarry(x2(c), id, false, dy || 0);
   }
-  // 휘두르기(2배 좌표). pose 0: 치켜듦, 1: 앞으로 내려침
+  // 휘두르기: 1배 좌표 그림을 2배 캔버스에. pose 0: 치켜듦, 1: 앞으로 내려침
   function hdSwing(c, id, pose) {
     if (id === 'guitar' || id === 'bass') {
-      const L = id === 'bass' ? 26 : 22;
-      if (pose === 0) { hdNeck(c, id, 27, 22, 29, Math.max(4, 26 - L)); MP.paint(c, HD_BODY[id], 20, 21, HD_PAL[id]); }
-      else { hdNeck(c, id, 29, 27, Math.min(60, 36 + L), 25); MP.paint(c, MP_rotCW(HD_BODY[id]), 18, 20, HD_PAL[id]); }
-    } else if (id === 'keys') {
-      if (pose === 0) drawInstrument(x2(c), 'keys', 12, 13, 0); else drawInstrument(x2(c), 'keys', 13, 13, 1);
-    } else if (id === 'drums') {
-      MP.paint(c, DRUM, 15, 27, DRUM_PAL);
-      if (pose === 0) hdSticks(c, [[24, 27, 18, 5], [26, 27, 28, 4]]);
-      else { hdSticks(c, [[26, 27, 50, 20], [26, 29, 52, 28]]); for (const [x, y] of [[56, 16], [58, 24], [56, 32]]) { px(c, MP.PAL.Y, x, y, 3, 1); px(c, MP.PAL.Y, x + 1, y - 1, 1, 3); } }
-    } else if (id === 'vocal') {
-      if (pose === 0) MP.paint(c, rotCCW(MEGA), 20, 6, MEGA_PAL);
-      else {
-        MP.paint(c, MEGA, 26, 20, MEGA_PAL);
-        for (const r of [6, 12, 18]) for (let a = -3; a <= 3; a++) { const y = 26 + Math.round(a * (r / 6 + 1.5)); px(c, MP.PAL.Y, 40 + r + Math.round(Math.abs(a) * -0.6), y, 2, 2); }
-      }
+      if (pose === 0) drawGuitar2(c, id, 21, 44, 84);   // 치켜듦
+      else drawGuitar2(c, id, 16, 27.5, 4);              // 앞으로 내려침
+      return;
     }
+    if (pose === 0) drawInstrument(x2(c), id, 12, 13, 0); else drawInstrument(x2(c), id, 13, 13, 1);
   }
   const flipH = rows => rows.map(r => [...r].reverse().join(''));
   const MP_rotCW = rows => { const h = rows.length, w = rows[0].length, out = []; for (let x = 0; x < w; x++) { let r = ''; for (let y = h - 1; y >= 0; y--) r += rows[y][x]; out.push(r); } return out; };

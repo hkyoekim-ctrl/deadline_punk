@@ -120,7 +120,7 @@ input:focus{border-color:var(--yellow)}
   </div>
 
   <div id="ovOver" class="ov ovOver hidden">
-    <div class="big">마감에 잡혔다!</div>
+    <div class="big">마감펑크!</div>
     <div class="scoreline">SCORE <b id="oScore">0</b></div>
     <div class="best" id="oBest"></div>
     <form id="fSubmit" autocomplete="off">
@@ -132,8 +132,8 @@ input:focus{border-color:var(--yellow)}
     </form>
     <div id="oMsg" class="msg"></div>
     <div class="srow">
-      <button id="btnImg" type="button" class="share">내 점수 이미지로 저장하기</button>
-      <button id="btnShare" type="button" class="share">링크 공유하기</button>
+      <button id="btnImg" type="button" class="share">이미지로 저장</button>
+      <button id="btnShare" type="button" class="share">링크 공유</button>
     </div>
     <button id="btnRetry" class="ghost">다시 달리기</button>
   </div>
@@ -310,6 +310,7 @@ const ART = { ok: false, img: {}, atlas: null };
 (function loadArt() {
   const files = { sheet: 'assets/spritesheet.png', sky: 'assets/bg_sky.png', far: 'assets/bg_far.png', near: 'assets/bg_near.png', ground: 'assets/bg_ground.png' };
   const jobs = Object.entries(files).map(([k, src]) => new Promise((res, rej) => { const im = new Image(); im.onload = () => { ART.img[k] = im; res(); }; im.onerror = rej; im.src = src; }));
+  jobs.push(new Promise(res => { const im = new Image(); im.onload = () => { ART.logo = im; res(); }; im.onerror = res; im.src = 'assets/title-logo.png'; }));
   jobs.push(fetch('assets/atlas.json').then(r => r.json()).then(j => { ART.atlas = j; }));
   Promise.all(jobs).then(() => { buildCharSheets(); buildSky(); ART.ok = true; buildSelect(); }).catch(() => { ART.ok = false; });
 })();
@@ -745,37 +746,43 @@ async function makeCard() {
   x.fillStyle = '#120d1d'; x.fillRect(0, 0, CW, CH);
   x.fillStyle = '#ff3d7f'; x.fillRect(0, 0, CW, 12); x.fillRect(0, CH - 12, CW, 12); x.fillRect(0, 0, 12, CH); x.fillRect(CW - 12, 0, 12, CH);
   x.fillStyle = '#ffd23f'; for (let i = 24; i < CW - 24; i += 24) { x.fillRect(i, 24, 12, 6); x.fillRect(i, CH - 30, 12, 6); }
-  // 게임이 끝난 그 장면 (320x180 → 960x540)
-  x.fillStyle = '#000'; x.fillRect(54, 74, 972, 552);
-  x.drawImage(cv, 0, 0, cv.width, cv.height, 60, 80, 960, 540);
+  // 상단: 마감펑크 로고 (게임 화면 대신)
+  x.fillStyle = '#0c0818'; x.fillRect(54, 74, 972, 552);
+  x.fillStyle = '#ff3d7f'; x.fillRect(54, 74, 972, 6); x.fillRect(54, 620, 972, 6);
+  if (ART.logo) {
+    const lh = 470, lw = Math.round(lh * ART.logo.width / ART.logo.height), lx = Math.round((CW - lw) / 2), ly = 104;
+    const tint = document.createElement('canvas'); tint.width = ART.logo.width; tint.height = ART.logo.height;
+    const tx = tint.getContext('2d'); tx.drawImage(ART.logo, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ff3d7f'; tx.fillRect(0, 0, tint.width, tint.height);
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(tint, lx + 10, ly + 10, lw, lh);
+    x.drawImage(ART.logo, lx, ly, lw, lh);
+    x.imageSmoothingEnabled = false;
+  } else { x.textAlign = 'center'; x.fillStyle = '#ff3d7f'; x.font = F(150); x.fillText('마감펑크', CW / 2, 380); }
   x.textBaseline = 'alphabetic'; x.textAlign = 'center';
-  // 타이틀
-  x.fillStyle = '#000'; x.font = F(64); x.fillText('마감에 잡혔다!', CW / 2 + 5, 700 + 5);
-  x.fillStyle = '#ff3d7f'; x.fillText('마감에 잡혔다!', CW / 2, 700);
   // 캐릭터 + 점수
   const fr = ART.ok && ART.atlas.frames[ch.id + '_portrait'];
-  const px = 96, py = 740;
+  const px = 96, py = 700;
   x.fillStyle = '#2a1f3d'; x.fillRect(px - 8, py - 8, 208, 208);
   if (fr) x.drawImage(ART.img.sheet, fr.x, fr.y, fr.w, fr.h, px, py, 192, 192);
   else if (ART.ok) { const keep = curChar; const t = document.createElement('canvas'); t.width = 32; t.height = 32; spr('run1', 8, 4, t.getContext('2d')); curChar = keep; x.drawImage(t, px, py, 192, 192); }
   x.textAlign = 'left';
-  x.fillStyle = '#a99cc8'; x.font = F(34); x.fillText(`${ch.role} 멤버로 달린 ${name || '익명의 작가'}`, 340, 776);
-  x.fillStyle = '#a99cc8'; x.font = F(40); x.fillText('SCORE', 340, 846);
-  x.fillStyle = '#ffd23f'; x.font = F(108); x.fillText(s.toLocaleString('ko-KR'), 340, 932);
+  x.fillStyle = '#a99cc8'; x.font = F(34); x.fillText(`${ch.role} 멤버로 달린 ${name || '익명의 작가'}`, 340, 736);
+  x.fillStyle = '#a99cc8'; x.font = F(40); x.fillText('SCORE', 340, 806);
+  x.fillStyle = '#ffd23f'; x.font = F(108); x.fillText(s.toLocaleString('ko-KR'), 340, 892);
   // 응원 메시지 (말풍선)
   if (cheer) {
     x.font = F(38);
     const lines = wrapText(x, `“${cheer}”`, 860).slice(0, 2), bh = 40 + lines.length * 52;
-    x.fillStyle = '#f7f1e3'; x.fillRect(96, 972, 888, bh);
-    x.fillRect(150, 962, 20, 10); x.fillRect(160, 952, 10, 10);
-    x.fillStyle = '#1a1423'; lines.forEach((l, i) => x.fillText(l, 120, 972 + 58 + i * 52));
+    x.fillStyle = '#f7f1e3'; x.fillRect(96, 936, 888, bh);
+    x.fillRect(150, 926, 20, 10); x.fillRect(160, 916, 10, 10);
+    x.fillStyle = '#1a1423'; lines.forEach((l, i) => x.fillText(l, 120, 936 + 58 + i * 52));
   }
   // 하단 홍보 문구
   x.textAlign = 'center';
   x.fillStyle = '#ff3d7f'; x.font = F(58); x.fillText('마감펑크 · DEADLINE PUNK', CW / 2, 1186);
   x.fillStyle = '#f7f1e3'; x.font = F(34); x.fillText('불과사이 데뷔 싱글 · 2026.11.20 OUT', CW / 2, 1238);
   let host = ''; try { const u = new URL(shareUrl()); host = /^https?:$/.test(u.protocol) && !/claude|localhost|127\.0\.0\.1/.test(u.hostname) ? u.host + u.pathname.replace(/\/(index\.html)?$/, '') : ''; } catch (e) {}
-  x.fillStyle = '#a99cc8'; x.font = F(28); x.fillText(host ? `너도 도망쳐 봐 → ${host}` : '너도 마감에게서 도망쳐 봐!', CW / 2, 1290);
+  x.fillStyle = '#a99cc8'; x.font = F(28); x.fillText(host ? `불과사이랑 달려라달려! → ${host}` : '불과사이랑 달려라달려!', CW / 2, 1290);
   return new Promise(res => c.toBlob(b => res(b), 'image/png'));
 }
 function wrapText(x, t, maxW) {
@@ -847,7 +854,7 @@ function spawnObstacle() {
   if (type === 'papers') { g.obs.push({ type, x, y: GROUND - 20, w: 16, h: 20 }); w = 16; }
   else if (type === 'chair') { g.obs.push({ type, x, y: GROUND - 18, w: 16, h: 18 }); w = 16; }
   else if (type === 'mail') { g.obs.push({ type, x, y: GROUND - 26, w: 18, h: 11, base: GROUND - 26, ph: Math.random() * 6 }); w = 18; }
-  else if (type === 'pen') { g.obs.push({ type, x, y: GROUND - 22, w: 20, h: 5 }); w = 20; }  // 공중: 숙여서 피함, +90px/s
+  else if (type === 'pen') { g.obs.push({ type, x, y: GROUND - 23, w: 22, h: 7 }); w = 22; }  // 공중: 숙여서 피함, +90px/s
   else if (type === 'books') {  // 2단 점프로만 넘는 높이, 꼭대기에 음표 2개
     g.obs.push({ type, x, y: GROUND - 60, w: 22, h: 60 }); w = 22;
     g.items.push({ type: 'note', x: x + 1, y: GROUND - 78, ph: 0 }, { type: 'note', x: x + 12, y: GROUND - 78, ph: 0.6 });
@@ -987,6 +994,7 @@ function buildSelect() {
 }
 // 시안: run1~run8, 12fps. 8프레임이 없는 캐릭터는 기존 4프레임으로
 function runFrame(t) {
+  t = Math.max(0, t);
   const n = ART.ok && ART.atlas.frames[curChar + '_run8'] ? 8 : 4;
   return n === 8 ? 'run' + (1 + Math.floor(t * 12) % 8) : 'run' + (1 + Math.floor(t * 8.6) % 4);
 }
@@ -1147,7 +1155,7 @@ function drawSky(u) {
   return sk;
 }
 // 배경 간판 (bg_near 의 x250~317, y78~99 빨간 판): 불과사이 ↔ BULGWASAI 번갈아
-const SIGN = { x: 250, y: 78, w: 68, h: 22, words: ['불과사이', 'BULGWASAI'], every: 2.2 };
+const SIGN = { x: 250, y: 78, w: 68, h: 22, words: ['불과사이', 'BULGWASAI', '마감펑크', '11.20 발매'], every: 2.2 };
 function drawSign(t, c = ctx) {
   const img = ART.img.near, o = Math.floor(g.scroll * 0.4) % img.width;
   const word = SIGN.words[Math.floor(t / SIGN.every) % SIGN.words.length];

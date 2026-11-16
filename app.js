@@ -31,10 +31,6 @@
   // ── 단순 텍스트 바인딩 ─────────────────────────
   document.querySelectorAll("[data-bind]").forEach((n) => text(n, get(n.dataset.bind)));
 
-  // ── 발매일 ────────────────────────────────────
-  const release = new Date(C.single.releaseAt);
-  text($("#footer-date"), new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "long" }).format(release));
-
   // ── 스트리밍 링크 · 뮤직비디오 ──────────────────
   function linkButton(item, cls = "btn") {
     const ready = item.url && !isPlaceholder(item.url);
@@ -49,10 +45,8 @@
     return a;
   }
   // 음악 사이트: 로고 타일만 한 줄로
-  let anyPending = false;
   C.single.streaming.forEach((s) => {
     const ready = s.url && !isPlaceholder(s.url);
-    if (!ready) anyPending = true;
     const logo = s.icon
       ? el("img", { src: s.icon, alt: "", class: s.wide ? "wide" : null })
       : el("span", { class: "mark" }, s.mark || s.label);
@@ -64,7 +58,6 @@
     }, logo);
     $("#stream-list").append(tile);
   });
-  $("#stream-note").hidden = !anyPending;
 
   const mv = $("#mv");
   const vid = C.single.youtubeId;
@@ -83,6 +76,25 @@
       el("span", { class: "placeholder" }, href ? "유튜브에서 보기" : "유튜브 공개 후 이 자리에 영상이 들어갑니다")
     ));
   }
+
+  // 뮤직비디오 크레딧
+  const mvCred = $("#mv-credits");
+  (C.single.mvCredits || []).forEach((r, i) => {
+    if (i) mvCred.append(document.createTextNode("  ·  "));
+    mvCred.append(el("span", { class: "mvc" }, el("b", {}, r.role), " " + r.names));
+  });
+  mvCred.hidden = !mvCred.childNodes.length;
+
+  // 앨범 커버 옆 크레딧
+  const cred = $("#credits");
+  (C.single.credits || []).forEach((g) => {
+    const box = el("div", { class: "cred-group" });
+    if (g.title) box.append(el("p", { class: "cred-title" }, g.title));
+    const dl = el("dl");
+    g.rows.forEach(([role, names]) => dl.append(el("div", {}, el("dt", {}, role), el("dd", {}, names))));
+    box.append(dl);
+    cred.append(box);
+  });
 
   // ── 밴드 소개 (신문 기사 배열) ──────────────────
   const news = $("#news");
@@ -150,6 +162,101 @@
     if (Math.abs(dx) > 40 && photos.length > 1) showPhoto(lbIndex + (dx < 0 ? 1 : -1));
   });
 
+  // ── 공연 일정: 픽셀 캘린더 ─────────────────────
+  (function schedule() {
+    const cal = $("#cal"), list = $("#gigs"), empty = $("#gigs-empty");
+    const pad = (n) => String(n).padStart(2, "0");
+    const kst = (t) => new Date(t).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" }); // YYYY-MM-DD
+    const todayStr = kst(Date.now());
+    const gigs = ((C.schedule && C.schedule.items) || []).filter((g) => g && g.date).map((g) => ({ ...g, kind: "gig" }));
+    const relDate = kst(C.single.releaseAt);
+    const events = [...gigs, { kind: "release", date: relDate, title: "마감펑크 발매", note: "모든 음원 사이트에서 만나요" }];
+    const byDate = (a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""));
+    const upcoming = gigs.filter((g) => g.date >= todayStr).sort(byDate);
+    const base = (upcoming[0] || { date: relDate >= todayStr ? relDate : todayStr }).date;
+    let y = +base.slice(0, 4), m = +base.slice(5, 7), sel = null;
+
+    // 도트 아이콘: 1px 요소 + box-shadow 로 그림
+    const ICONS = {
+      gig: { w: 5, h: 5, px: [[2,0],[1,1],[2,1],[3,1],[0,2],[1,2],[2,2],[3,2],[4,2],[1,3],[2,3],[3,3],[2,4]] },
+      rel: { w: 7, h: 7, px: [[2,0],[3,0],[4,0],[1,1],[2,1],[3,1],[4,1],[5,1],[0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[0,3],[1,3],[2,3],[4,3],[5,3],[6,3],[0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[1,5],[2,5],[3,5],[4,5],[5,5],[2,6],[3,6],[4,6]] }
+    };
+    const icon = (kind) => {
+      const ic = ICONS[kind], n = el("span", { class: "ico", "aria-hidden": "true", style: `--w:${ic.w};--h:${ic.h}` });
+      n.style.boxShadow = ic.px.map(([x, yy]) => `calc(var(--u)*${x}) calc(var(--u)*${yy}) 0 0 currentColor`).join(",");
+      return n;
+    };
+
+    function row(e) {
+      const isPast = e.date < todayStr;
+      const d = new Date(`${e.date}T12:00:00+09:00`);
+      const wd = ["일", "월", "화", "수", "목", "금", "토"][new Date(Date.UTC(+e.date.slice(0, 4), +e.date.slice(5, 7) - 1, +e.date.slice(8, 10))).getUTCDay()];
+      const days = Math.round((Date.parse(e.date) - Date.parse(todayStr)) / 86400000);
+      const tag = isPast ? "종료" : days === 0 ? "TODAY" : `D-${days}`;
+      const meta = [e.time, [e.venue, e.place].filter(Boolean).join(" · ")].filter(Boolean).join(" · ");
+      const ready = e.url && !isPlaceholder(e.url) && !isPast;
+      const li = el("li", { class: ["gig", e.kind === "release" ? "rel" : "", isPast ? "past" : "", sel === e.date ? "sel" : ""].join(" ").replace(/\s+/g, " ").trim() },
+        el("div", { class: "gig-date" }, el("span", { class: "m" }, `${+e.date.slice(5, 7)}월`), el("span", { class: "d" }, String(+e.date.slice(8, 10))), el("span", { class: "w" }, wd)),
+        el("div", { class: "gig-body" },
+          el("h3", { class: "gig-title" }, e.title || "공연"),
+          meta ? el("p", { class: "gig-meta" }, meta) : null,
+          e.note ? el("p", { class: "gig-note" }, e.note) : null),
+        el("div", { class: "gig-act" },
+          el("span", { class: "gig-tag" }, tag),
+          ready ? el("a", { class: "btn", href: e.url, target: "_blank", rel: "noopener" }, el("span", {}, e.linkLabel || "자세히"), el("span", {}, "↗")) : null));
+      void d;
+      return li;
+    }
+
+    function render() {
+      const key = `${y}-${pad(m)}`;
+      const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+      const total = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      const evs = events.filter((e) => e.date.startsWith(key)).sort(byDate);
+      const perDay = {};
+      evs.forEach((e) => (perDay[+e.date.slice(8, 10)] = perDay[+e.date.slice(8, 10)] || []).push(e));
+
+      const nav = (label, dir, txt) => {
+        const b = el("button", { class: "cal-nav", type: "button", "aria-label": label }, txt);
+        b.addEventListener("click", () => { m += dir; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } sel = null; render(); });
+        return b;
+      };
+      const grid = el("div", { class: "cal-grid" });
+      ["일", "월", "화", "수", "목", "금", "토"].forEach((w, i) => grid.append(el("div", { class: "cal-dow" + (i === 0 ? " sun" : i === 6 ? " sat" : "") }, w)));
+      for (let i = 0; i < first; i++) grid.append(el("div", { class: "cal-day blank", "aria-hidden": "true" }));
+      for (let d = 1; d <= total; d++) {
+        const ds = `${key}-${pad(d)}`, here = perDay[d] || [], col = (first + d - 1) % 7;
+        const cls = ["cal-day", col === 0 ? "sun" : col === 6 ? "sat" : "", ds === todayStr ? "today" : "", ds < todayStr ? "past" : "",
+          here.some((e) => e.kind === "gig") ? "gig" : here.length ? "rel" : "", sel === ds ? "sel" : ""].filter(Boolean).join(" ");
+        const cell = here.length
+          ? el("button", { class: cls, type: "button", "aria-label": `${m}월 ${d}일 ${here.map((e) => e.title).join(", ")}` })
+          : el("div", { class: cls });
+        cell.append(el("span", { class: "n" }, String(d)));
+        if (here.length) {
+          cell.append(icon(here.some((e) => e.kind === "gig") ? "gig" : "rel"));
+          cell.addEventListener("click", () => { sel = sel === ds ? null : ds; render(); });
+        }
+        grid.append(cell);
+      }
+      cal.replaceChildren(
+        el("div", { class: "cal-head" }, nav("이전 달", -1, "◀"), el("div", { class: "cal-title" }, `${y}.${pad(m)}`), nav("다음 달", 1, "▶")),
+        grid,
+        el("div", { class: "cal-legend" }, el("span", { class: "lg g" }, "공연"), el("span", { class: "lg r" }, "발매일"), el("span", { class: "lg t" }, "오늘"))
+      );
+      list.replaceChildren();
+      if (!evs.length) list.append(el("li", { class: "gig none" }, "이 달에는 아직 일정이 없어요."));
+      else evs.forEach((e) => list.append(row(e)));
+    }
+    render();
+
+    if (!gigs.length) {
+      const insta = (C.band.socials || []).find((x) => x.url && /instagram/i.test(x.label));
+      empty.hidden = false;
+      empty.append(el("p", {}, "아직 확정된 공연이 없어요. 새 일정이 잡히면 이곳과 인스타그램에서 가장 먼저 알려 드릴게요."));
+      if (insta) empty.append(el("a", { class: "btn alt", href: insta.url, target: "_blank", rel: "noopener" }, el("span", {}, "인스타그램 보러 가기"), el("span", {}, "↗")));
+    }
+  })();
+
   // ── 후원 ──────────────────────────────────────
   C.support.links.forEach((l) => {
     const title = el("h3"); text(title, l.label);
@@ -189,26 +296,42 @@
   const fmt = new Intl.NumberFormat("ko-KR");
   const when = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
-  // 로고 아래에 현재 1위를 보여줍니다
-  function showLeader(top) {
+  // 로고 아래 전광판: 현재 1위 + 여러 사람의 닉네임·응원 메시지를 돌려가며 송출
+  function buildFeed(rows, recent) {
+    const seen = new Set(), out = [];
+    [rows[0], ...recent, ...rows.slice(1)].filter(Boolean).forEach((r) => {
+      const key = `${r.name}|${r.score}|${r.created_at}`;
+      if (seen.has(key) || out.length >= 24) return;
+      seen.add(key);
+      out.push(r.message ? `“${r.message}” — ${r.name}` : `${r.name} 님 ${fmt.format(r.score)}점 질주 중`);
+    });
+    return out;
+  }
+  function showLeader(top, feed) {
     const box = $("#leader");
     if (!box) return;
     box.hidden = false;
+    $("#crowd").hidden = false;
     const head = el("div", { class: "led-head" }, el("span", { class: "led-blink" }, "●"), " NOW 1ST ", el("span", { class: "led-blink" }, "●"));
+    const ticker = (lines) => {
+      const msg = lines.join("  ★  ") + "  ★  ";
+      const span = el("span", {}, msg);
+      span.style.animationDuration = Math.max(14, (msg.length * 13 + 520) / 85) + "s";
+      return el("div", { class: "led-ticker" }, span);
+    };
     if (!top) {
       box.replaceChildren(head, el("div", { class: "led-row" }, el("span", { class: "led-inner" }, el("span", { class: "led-name" }, "1위 자리가 비어 있어요"))),
-        el("div", { class: "led-ticker" }, el("span", {}, "첫 주인공이 되어 보세요! ★ 첫 주인공이 되어 보세요! ★ ")));
+        ticker(["첫 주인공이 되어 보세요!", "마감에서 가장 멀리 도망쳐 보세요!"]));
       return;
     }
     const part = MPLeaderboard.CHARACTERS[top.character];
-    const tick = top.message ? `“${top.message}” — ${top.name}` : `${top.name} 님이 마감에서 가장 멀리 도망쳤어요`;
     box.replaceChildren(
       head,
       el("div", { class: "led-row" }, el("span", { class: "led-inner" },
         el("span", { class: "led-name" }, top.name),
         part ? el("span", { class: "led-part" }, `[${part}]`) : null,
         el("span", { class: "led-score" }, fmt.format(top.score)))),
-      el("div", { class: "led-ticker" }, el("span", {}, `${tick} ★ ${tick} ★ `))
+      ticker(feed.length ? feed : [`${top.name} 님이 마감에서 가장 멀리 도망쳤어요`])
     );
   }
 
@@ -221,7 +344,9 @@
       board.replaceChildren(el("div", { class: "board-empty" }, "순위를 불러오지 못했어요. 잠시 뒤 새로고침해 주세요."));
       return;
     }
-    showLeader(rows[0]);
+    let recent = [];
+    try { recent = await store.recent(30); } catch { /* 없어도 전광판은 돌아가요 */ }
+    showLeader(rows[0], buildFeed(rows, recent));
     if (!rows.length) {
       board.replaceChildren(el("div", { class: "board-empty" }, "아직 기록이 없어요. 첫 번째로 이름을 올려 보세요."));
       return;
@@ -267,6 +392,105 @@
       return { ok: false, error: (err && err.userMessage) || "기록을 저장하지 못했어요. 잠시 뒤 다시 시도해 주세요." };
     }
   }
+
+  // ── 응원하는 관객: 밴드 멤버처럼 외곽선이 있는 도트 캐릭터 (뒷모습) ──
+  (function crowd() {
+    const cv = $("#crowd");
+    if (!cv) return;
+    const ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+    const PW = 14, PH = 27, OY = 3, OUT = "#0e0c20";
+    let seed = 23;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const pick = (a) => a[Math.floor(rnd() * a.length)];
+    const HAIR = ["#1c1a1f", "#3b2a22", "#6b4a2f", "#d9b25a", "#e8e0d0", "#c93f3f", "#2e3d63", "#7a4aa8", "#ff8fc7"];
+    const SHIRT = ["#ff5a47", "#ffd23f", "#5cf2a0", "#6fb7ff", "#ff8fc7", "#b79bff", "#f4eedc", "#ff9a3d", "#3fb8af"];
+    const SKIN = ["#f6c7a0", "#e0a37e", "#b97a57"];
+    const STICK = ["#ffd23f", "#ff5a47", "#5cf2a0", "#6fb7ff", "#ff8fc7"];
+    const rgb = (c) => { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+    const tone = (c, k) => `rgb(${rgb(c).map((v, i) => Math.round(v * k + [21, 19, 46][i] * (1 - k)))})`;   // 어둡게
+    const lite = (c, k) => `rgb(${rgb(c).map((v) => Math.round(v + (255 - v) * k))})`;                       // 밝게
+
+    function sprite(p, frame, dim) {
+      const g = new Array(PW * PH).fill(null);
+      const put = (x, y, c) => { y += OY; if (x >= 0 && x < PW && y >= 0 && y < PH) g[y * PW + x] = c; };
+      const rect = (x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, c); };
+      const T = (c) => (dim < 1 ? tone(c, dim) : c);
+      const shirt = T(p.shirt), shirtD = tone(p.shirt, dim * 0.72), skin = T(p.skin);
+      const hair = T(p.hair), hairD = tone(p.hair, dim * 0.7), hairL = lite(T(p.hair), 0.35);
+      // 몸통 (뒷모습)
+      rect(3, 11, 8, 1, shirt); rect(2, 12, 10, PH, shirt); rect(11, 12, 1, PH, shirtD);
+      if (p.top === "stripe") for (let y = 15; y < PH; y += 4) rect(2, y, 10, 1, T(p.shirt2));
+      if (p.top === "hood") rect(4, 10, 6, 3, shirtD); else rect(6, 10, 2, 1, skin);
+      // 머리
+      if (p.style === "cap" || p.style === "beanie") {
+        const cap = T(p.cap), capD = tone(p.cap, dim * 0.7);
+        if (p.style === "beanie") { rect(5, 3, 4, 1, cap); rect(4, 4, 6, 3, cap); rect(4, 5, 6, 1, lite(cap, 0.3)); rect(9, 4, 1, 3, capD); rect(4, 7, 6, 2, hair); rect(9, 7, 1, 2, hairD); }
+        else { rect(5, 4, 4, 1, cap); rect(4, 5, 6, 2, cap); rect(9, 5, 1, 2, capD); rect(4, 7, 6, 2, hair); rect(9, 7, 1, 2, hairD); set7(); }
+        rect(5, 9, 4, 1, skin);
+      } else {
+        rect(5, 4, 4, 1, hair); rect(4, 5, 6, 4, hair); rect(9, 5, 1, 4, hairD);
+        put(5, 5, hairL); put(6, 5, hairL);
+        if (p.style === "long") { rect(4, 9, 6, 5, hair); rect(9, 9, 1, 5, hairD); rect(5, 14, 4, 1, hair); }
+        else rect(5, 9, 4, 1, skin);
+        if (p.style === "bun") { rect(6, 2, 2, 2, hair); put(6, 2, hairL); }
+      }
+      function set7() { put(6, 7, skin); }   // 모자 뒤 틈
+      // 팔: 위로 뻗어 응원봉을 들어요
+      const sway = frame ? 1 : 0, sticks = [];
+      const arm = (side) => {
+        const x = side < 0 ? 2 - sway : 11 + sway;
+        const hand = 4 + ((side < 0) === !!frame ? 1 : 0);
+        rect(x, hand + 1, 1, 10 - hand, shirt);
+        put(x, hand, skin);
+        if (sway) put(side < 0 ? 2 : 11, 11, shirt);
+        sticks.push([x, hand]);
+      };
+      if (p.arm === "both" || p.arm === "L") arm(-1);
+      if (p.arm === "both" || p.arm === "R") arm(1);
+      // 외곽선
+      const out = g.slice();
+      for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) {
+        if (g[y * PW + x]) continue;
+        if ((x > 0 && g[y * PW + x - 1]) || (x < PW - 1 && g[y * PW + x + 1]) || (y > 0 && g[(y - 1) * PW + x]) || (y < PH - 1 && g[(y + 1) * PW + x])) out[y * PW + x] = OUT;
+      }
+      const c = document.createElement("canvas"); c.width = PW; c.height = PH;
+      const x2 = c.getContext("2d");
+      // 응원봉 빛 번짐 → 몸 → 응원봉
+      const sc = frame ? lite(p.stick, 0.45) : p.stick;
+      sticks.forEach(([x, hand]) => {
+        x2.fillStyle = "rgba(255,240,200,0.22)";
+        for (let j = -2; j <= 0; j++) { x2.fillRect(x - 1, hand + j + OY - 1, 1, 1); x2.fillRect(x + 1, hand + j + OY - 1, 1, 1); }
+        x2.fillRect(x, hand + OY - 4, 1, 1);
+      });
+      out.forEach((col, i) => { if (col) { x2.fillStyle = col; x2.fillRect(i % PW, Math.floor(i / PW), 1, 1); } });
+      sticks.forEach(([x, hand]) => {
+        x2.fillStyle = sc; x2.fillRect(x, hand + OY - 2, 1, 2);
+        x2.fillStyle = lite(p.stick, 0.7); x2.fillRect(x, hand + OY - 3, 1, 1);
+      });
+      return c;
+    }
+
+    const people = [];
+    const makeRow = (yy, start, step, dim) => {
+      for (let x = start; x < W - 8; x += step) {
+        const arm = rnd() < 0.62 ? "both" : rnd() < 0.8 ? (rnd() < 0.5 ? "L" : "R") : "none";
+        const p = {
+          arm, hair: pick(HAIR), shirt: pick(SHIRT), shirt2: pick(SHIRT), skin: pick(SKIN), stick: pick(STICK), cap: pick(SHIRT),
+          style: pick(["short", "short", "long", "bun", "cap", "beanie"]), top: pick(["plain", "plain", "stripe", "hood"])
+        };
+        people.push({ x: Math.round(x + rnd() * 2), y: yy, phase: rnd() < 0.5 ? 0 : 1, frames: [sprite(p, 0, dim), sprite(p, 1, dim)] });
+      }
+    };
+    makeRow(H - PH - 8, 4, 13, 0.5);   // 뒷줄
+    makeRow(H - PH, -3, 14, 1);        // 앞줄
+    let frame = 0;
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+      people.forEach((q) => { const f = (frame + q.phase) % 2; ctx.drawImage(q.frames[f], q.x, q.y + f); });
+    };
+    draw();
+    setInterval(() => { if (!document.hidden) { frame++; draw(); } }, 420);
+  })();
 
   // ── 게임 임베드 ───────────────────────────────
   let frame = null;

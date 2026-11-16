@@ -21,6 +21,7 @@
       <a href="#rank">순위</a>
       <a href="#listen">듣기</a>
       <a href="#band">밴드</a>
+      <a href="#schedule">공연</a>
       <a href="#support">후원</a>
     </nav>
   </div>
@@ -38,24 +39,19 @@
 
       <div class="release">
         <div class="ticket">
-          <div class="t-cell t-what">
-            <span class="t-label">1ST DIGITAL SINGLE</span>
-            <span class="t-main">밴드 불과사이 첫 데뷔 싱글</span>
-          </div>
-          <div class="t-cell t-when">
-            <span class="t-label">RELEASE</span>
-            <span class="t-date">26/11/20</span>
-          </div>
+          <span class="t-label">26/11/20 RELEASE</span>
+          <span class="t-main">밴드 불과사이 첫 데뷔 싱글</span>
         </div>
-        <p class="mission"><strong>불과사이와 함께 달려라달려!!!!</strong></p>
-        <ul class="crew" aria-label="게임 캐릭터: 노래, 기타, 베이스, 드럼, 건반">
-          <li><span class="crew-sprite" style="--sheet:url(img/runners/vocal.png); --delay:-0.00s"></span><span class="crew-part">노래</span></li>
-          <li><span class="crew-sprite" style="--sheet:url(img/runners/guitar.png); --delay:-0.29s"></span><span class="crew-part">기타</span></li>
-          <li><span class="crew-sprite" style="--sheet:url(img/runners/bass.png); --delay:-0.58s"></span><span class="crew-part">베이스</span></li>
-          <li><span class="crew-sprite" style="--sheet:url(img/runners/drums.png); --delay:-0.87s"></span><span class="crew-part">드럼</span></li>
-          <li><span class="crew-sprite" style="--sheet:url(img/runners/keys.png); --delay:-1.16s"></span><span class="crew-part">건반</span></li>
+        <p class="mission">글 쓰는 다섯 작가들이 만든 밴드 불과사이.<br>그들이 마감을 앞두고 외친다.<span class="m-quote">“마감 펑크도 펑크(PUNK)다!!”</span></p>
+        <ul class="crew" aria-label="게임 캐릭터 다섯 명">
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/vocal.png); --delay:-0.00s"></span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/guitar.png); --delay:-0.29s"></span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/bass.png); --delay:-0.58s"></span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/drums.png); --delay:-0.87s"></span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/keys.png); --delay:-1.16s"></span></li>
         </ul>
         <a class="leader" id="leader" href="#rank" aria-live="polite" hidden></a>
+        <canvas class="crowd" id="crowd" width="130" height="36" aria-hidden="true" hidden></canvas>
         <a class="cue" href="#stage" aria-label="게임으로 이동"><span>▼</span> PRESS START <span>▼</span></a>
       </div>
 
@@ -69,7 +65,6 @@
           </form>
         </div>
       </div>
-      <p class="play-hint">스페이스바나 ↑로 점프, ↓로 슬라이드. 휴대폰은 화면 오른쪽을 탭하면 점프, 왼쪽을 누르면 슬라이드예요. 음표를 모으면 점수가 오르고, 커피를 마시면 마감이 뒤로 밀려나요. 잡히면 닉네임을 남겨 순위표에 올라가세요.</p>
     </div>
   </section>
 
@@ -92,26 +87,45 @@
       <p class="kicker">LISTEN &amp; WATCH</p>
       <h2>마감펑크 듣기</h2>
       <nav class="stream-row" id="stream-list" aria-label="음악 사이트에서 듣기"></nav>
-      <p class="stream-note" id="stream-note" hidden>11월 20일 발매 후 로고를 누르면 각 음악 사이트로 이동해요.</p>
       <div class="mv" id="mv"></div>
-      <p class="credits" data-bind="single.credits"></p>
+      <p class="mv-credits" id="mv-credits" aria-label="뮤직비디오 크레딧"></p>
     </div>
   </section>
 
   <section id="band">
     <div class="wrap">
-      <p class="kicker">THE BAND</p>
+      <div class="band-top">
+        <p class="kicker">BULGWASAI</p>
+        <div class="socials" id="socials"></div>
+      </div>
       <header class="news-head">
         <h2 data-bind="band.headline"></h2>
         <p class="news-sub" data-bind="band.subhead"></p>
       </header>
       <article class="news" id="news"></article>
       <ul class="lineup" id="members" aria-label="멤버"></ul>
-      <div class="band-links">
-        <div class="socials" id="socials"></div>
-        <p class="contact">문의 · <span data-bind="band.contact"></span></p>
+      <div class="release-credits">
+        <figure class="cover"><img src="img/cover.jpg" alt="마감펑크 앨범 커버" width="900" height="900" loading="lazy"></figure>
+        <div class="cred-panel" aria-label="마감펑크 앨범 크레딧">
+          <div class="cred-head"><span>ALBUM CREDITS</span><span>마감펑크 · DEADLINE PUNK</span></div>
+          <div class="cred" id="credits"></div>
+        </div>
       </div>
       <div class="gallery" id="gallery" aria-label="밴드 사진"></div>
+    </div>
+  </section>
+
+  <section id="schedule">
+    <div class="wrap">
+      <p class="kicker">SCHEDULE</p>
+      <h2>공연 일정</h2>
+      <div class="sched">
+        <div class="cal" id="cal"></div>
+        <div class="sched-side">
+          <ul class="gigs" id="gigs"></ul>
+          <div class="gigs-empty" id="gigs-empty" hidden></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -127,8 +141,8 @@
 
 <footer>
   <div class="wrap">
-    <span>© 2026 <span data-bind="band.name"></span></span>
-    <span>DEADLINE PUNK · 마감펑크 · <span id="footer-date"></span> 발매</span>
+    <span data-bind="band.copyright"></span>
+    <span class="footer-contact" data-bind="band.contact"></span>
   </div>
 </footer>
 

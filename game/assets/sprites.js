@@ -120,27 +120,27 @@
 
   // ── 장애물·아이템
   const OBJ = {
-    // 서류더미(수정요청 도장) 16x20 — 바닥, 점프로 넘기
+    // 서류함(수정요청 도장 찍힌 종이가 올라와 있음) 16x20 — 바닥, 점프로 넘기
     paper: [
-      '...KKKKKKKKKK...',
-      '...KWWWWWWWWK...',
-      '..KKKKKKKKKKKK..',
-      '..KWWWWWWWWWWK..',
-      '..KWLLLLLLLWWK..',
-      '.KKKKKKKKKKKKKK.',
-      '.KWWWWWWWWWWWWK.',
-      '.KWLLLLLLLLLWWK.',
-      '.KWWWWWWWWWWWWK.',
+      '.....KKKKKKKK...',
+      '.....KWWWWWWK...',
+      '.KKKKKWLLLLWK...',
+      '.KWWWKWWWWKWWWK.',
+      '.KWLLLWLLLLWWWK.',
+      '.KWWWKWWWWKWWWK.',
+      '.KWLLLrrrrrrWWK.',
+      '.KWWWKrRRRRrWWK.',
+      '.KWWWKrWRRWrWWWK',
+      '.KWWWKrrrrrrWWWK',
+      '.KWWWKWWWWWKWWWK',
       'KKKKKKKKKKKKKKKK',
-      'KWWWWWWWWWWWWWWK',
-      'KWLLLLLLLLLLWWWK',
-      'KWWWWWRRRRRWWWWK',
-      'KWLLLRWWWWWRLWWK',
-      'KWWWWRWRRRWRWWWK',
-      'KWLLLRWWWWWRLLWK',
-      'KWWWWWRRRRRWWWWK',
-      'KWLLLLLLLLLLLLWK',
-      'KWWWWWWWWWWWWWWK',
+      'KMMMMMMMMMMMMMMK',
+      'KPPPPPPPPPPPPPPK',
+      'KPPPKKKKKKKKPPPK',
+      'KPPPKRRWRRRKPPPK',
+      'KPPPKKKKKKKKPPPK',
+      'KppppppppppppppK',
+      'KppppppppppppppK',
       'KKKKKKKKKKKKKKKK',
     ],
     // 울리는 휴대폰 12x16 — 바닥, 점프로 넘기
@@ -192,13 +192,15 @@
       '..KWWWWK....',
       '..KKKKKK....',
     ],
-    // 날아오는 빨간 교정 펜 20x5 — 공중, 아주 빠름, 숙여서 피하기
+    // 날아오는 빨간 만년필 22x7 — 공중, 아주 빠름, 숙여서 피하기 (금빛 펜촉이 왼쪽)
     pen: [
-      '....KKKKKKKKKKKKKKK.',
-      '..KKWWRRRRRRRRRRRRKK',
-      'KKMWWWRRRRRRRYYRRRrK',
-      '..KKWWRRRRRRRRRRrrKK',
-      '....KKKKKKKKKKKKKKK.',
+      '....KKKKK....KKKKKKKKK',
+      '..KKGGGGGKKKKYRYYYYYRK',
+      'KKGGYYYYYLLLLGRWWWWWRK',
+      'KgggggKGGMMMMGRRRRRRRK',
+      'KKGGgggggppppGRRRRRRRK',
+      '..KKGGGGGKKKKGrrrrrrrK',
+      '....KKKKK....KKKKKKKKK',
     ],
     // 굴러오는 사무용 의자 16x18 — 바닥, 다른 장애물보다 빨리 굴러옴, 점프로 넘기
     chair: [
@@ -493,7 +495,7 @@
   const HITBOX = {
     stand: [4, 2, 8, 22], slide: [3, 12, 10, 12],
     paper: [1, 1, 14, 19], phone: [3, 2, 6, 14], mail: [1, 1, 13, 9],
-    coffee: [1, 4, 10, 9], note: [0, 0, 10, 12], chair: [2, 1, 11, 17], pen: [0, 1, 20, 3], books: [1, 2, 20, 58], americano: [1, 0, 10, 12], beer: [0, 0, 13, 13], deadline: [2, 2, 36, 36],
+    coffee: [1, 4, 10, 9], note: [0, 0, 10, 12], chair: [2, 1, 11, 17], pen: [1, 1, 20, 5], books: [1, 2, 20, 58], americano: [1, 0, 10, 12], beer: [0, 0, 13, 13], deadline: [2, 2, 36, 36],
   };
 
   root.MP = { PAL, BG, HITBOX, buildSprites, buildLayers, drawMonster, paint, tinyText };

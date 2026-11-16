@@ -84,6 +84,7 @@ window.MP_CONFIG = {
       { label: "YouTube", url: "https://www.youtube.com/@Bulgwasai" }
     ],
     contact: "betweenfire.band@gmail.com",
+    copyright: "© 2026 불과사이·김혜경",
     // 밴드 사진 갤러리: img/band/ 에 사진을 넣고 아래에 추가하세요. 비어 있으면 사진 자리만 보입니다.
     // 예) { src: "img/band/01.jpg", thumb: "img/band/01_s.jpg"(작은 미리보기, 없으면 src), alt: "사진 설명", caption: "아래 문구" }
     photos: [
@@ -104,7 +105,34 @@ window.MP_CONFIG = {
     titleEn: "DEADLINE PUNK",
     // 발매 시각 (한국 시간). 국내 음원은 보통 18:00 발매라 임시로 넣어 두었습니다.
     releaseAt: "2026-11-20T18:00:00+09:00",
-    credits: "[작사 · 작곡 · 편곡 크레딧]",
+    // 뮤직비디오 아래 크레딧
+    mvCredits: [
+      { role: "감독", names: "이승용, 김혜경" },
+      { role: "촬영", names: "엄성탁, 황영식, 문지호, 홍민호" },
+      { role: "제작 진행", names: "안준원, 최봉기" },
+      { role: "컬러 보정", names: "최봉기" },
+      { role: "Special Thanks", names: "김재현" }
+    ],
+    // 앨범 커버 옆 크레딧 (title 이 있으면 소제목)
+    credits: [
+      { rows: [
+        ["프로듀싱", "박장미"], ["작곡", "이승용"], ["작사", "이승용 구현우"],
+        ["편곡", "이승용 김혜경 구현우 송지현 임국영 박장미"]
+      ] },
+      { title: "연주", rows: [
+        ["드럼", "김혜경"], ["베이스", "구현우"], ["건반", "송지현"], ["기타", "이승용"],
+        ["노래", "임국영"], ["코러스", "임국영 김혜경 이승용"], ["전화 음성", "김혜경"]
+      ] },
+      { title: "레코딩", rows: [
+        ["기타·베이스·노래", "박장미"], ["드럼", "박재준"], ["건반", "이승용"], ["전화 음성", "이승용"]
+      ] },
+      { rows: [
+        ["믹싱", "천학주 @머쉬룸레코딩스튜디오"], ["마스터링", "강승희 @소닉코리아 마스터링 스튜디오"]
+      ] },
+      { rows: [["커버·로고 디자인", "조석현"], ["사진", "송재랑"]] },
+      { rows: [["서포트", "단편선"]] },
+      { rows: [["음원 배급", "미러볼뮤직"]] }
+    ],
     // 스트리밍 링크. 비어 있으면 "준비 중"으로 표시됩니다.
     // icon: img/stream/ 의 로고 파일, color: 아이콘 배경색
     streaming: [
@@ -118,7 +146,7 @@ window.MP_CONFIG = {
   },
 
   support: {
-    intro: "후원금은 다음 앨범 작업과 작가들의 공연 활동에 쓰입니다.",
+    intro: "여러분의 응원이 모여 저희의 다음 이야기가 됩니다.\n후원해 주신 금액은 다가올 새 앨범 작업과 여러분을 더 가까이에서 만나기 위한 공연 활동의 밑거름으로 소중히 쓰겠습니다. 지속 가능한 창작 활동을 응원해 주세요!",
     // 링크형 후원 수단 (토스 송금 링크, 투네이션, Buy Me a Coffee, 텀블벅 등)
     links: [],
     // 계좌 후원. 비워 두면 섹션에서 숨겨집니다.
@@ -130,6 +158,13 @@ window.MP_CONFIG = {
     url: "https://bulgwasai.com"
   },
 
+  schedule: {
+    // 공연이 정해지면 아래 형식으로 한 줄씩 추가하세요. 비어 있으면 "일정 준비 중" 안내가 보입니다.
+    // 지난 공연은 자동으로 아래로 내려가 흐리게 표시됩니다.
+    // 예) { date: "2026-12-05", time: "19:00", title: "공연 이름", venue: "공연장 이름", place: "서울 마포구", note: "한 줄 메모(선택)", url: "예매·안내 링크(선택)", linkLabel: "예매하기" }
+    items: []
+  },
+
   game: {
     // 게임 스레드가 만든 파일을 site/game/ 에 두면 됩니다.
     src: "game/index.html"
@@ -138,9 +173,9 @@ window.MP_CONFIG = {
   leaderboard: {
     // "supabase": 실제 공개 순위표 (supabase/README 참고)
     // "local": 이 브라우저에만 저장되는 데모 모드
-    provider: "local",
-    supabaseUrl: "",
-    supabaseAnonKey: "",
+    provider: "supabase",
+    supabaseUrl: "https://tbzfwbrskxbqwhsrznmg.supabase.co",
+    supabaseAnonKey: "sb_publishable_FPYdRow5uh3v_7bhYp9rJQ_LP1jNf3v",
     size: 20
   }
 };

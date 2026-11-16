@@ -42,6 +42,9 @@
       async top() {
         return read().sort((a, b) => b.score - a.score).slice(0, size);
       },
+      async recent(n) {
+        return read().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, n);
+      },
       async submit(row) {
         const rows = read();
         const saved = { ...row, created_at: new Date().toISOString() };
@@ -60,6 +63,11 @@
       kind: "supabase",
       async top() {
         const res = await fetch(`${base}/scores?select=name,message,score,distance,character,created_at&order=score.desc,created_at.asc&limit=${size}`, { headers });
+        if (!res.ok) throw new Error("load_failed");
+        return res.json();
+      },
+      async recent(n) {
+        const res = await fetch(`${base}/scores?select=name,message,score,distance,character,created_at&order=created_at.desc&limit=${n}`, { headers });
         if (!res.ok) throw new Error("load_failed");
         return res.json();
       },
