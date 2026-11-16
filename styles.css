@@ -363,8 +363,6 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 /* 로고 아래: 발매 티켓 + 게임 안내 (로고·티켓·전광판은 같은 폭) */
 .release { --w: min(100%, 520px); display: flex; flex-direction: column; align-items: center; gap: 34px; margin: 52px auto 48px; text-align: center; }
 .ticket { width: var(--w); display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.t-art { width: clamp(210px, 62vw, 280px); height: auto; image-rendering: pixelated; margin-top: 14px; animation: art-bob 1.6s steps(2, jump-none) infinite; }
-@keyframes art-bob { 50% { transform: translateY(-5px); } }
 .t-label { font-family: var(--f-pixel); font-size: clamp(15px, 4.4vw, 20px); letter-spacing: 0.12em; color: var(--overdue); -webkit-font-smoothing: none; }
 .t-label::before, .t-label::after { content: "★"; font-size: 0.7em; margin: 0 8px; vertical-align: 2px; color: var(--postit); }
 .t-main { color: var(--paper); font-family: var(--f-display); font-size: clamp(17px, 5vw, 26px); line-height: 1.25; -webkit-font-smoothing: none; }
