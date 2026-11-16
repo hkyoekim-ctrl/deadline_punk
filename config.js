@@ -127,7 +127,7 @@ window.MP_CONFIG = {
 
   site: {
     // 배포한 사이트 주소. 게임의 '링크 공유'와 점수 이미지 하단에 들어갑니다. 비우면 지금 페이지 주소를 씁니다.
-    url: ""
+    url: "https://bulgwasai.com"
   },
 
   game: {
