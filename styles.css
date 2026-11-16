@@ -455,7 +455,7 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 /* 전광판 아래 응원하는 관객 (도트) */
 .crowd { display: block; width: min(100%, 520px); height: auto; aspect-ratio: 130 / 24; image-rendering: pixelated; margin-top: -22px; position: relative; z-index: 0; }
 .crowd[hidden] { display: none; }
-.release .cue { margin-top: 2px; display: flex; flex-direction: column; align-items: center; gap: 18px; animation: none; }
+.release .cue { margin-top: 2px; display: flex; flex-direction: column; align-items: center; gap: 4px; animation: none; }
 .cue-game { font-family: var(--f-pixel); font-size: clamp(18px, 5.2vw, 24px); letter-spacing: 0.1em; color: var(--paper); -webkit-font-smoothing: none; }
 .cue-game b { font-weight: 400; background: var(--overdue); color: #fff; padding: 3px 12px 2px; margin-right: 10px; letter-spacing: 0.1em; }
 .cue-go { font-size: 17px; animation: cue-blink 1.1s steps(2, jump-none) infinite; }
