@@ -455,7 +455,7 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 @keyframes led-flash { 50% { color: var(--led); } }
 
 /* 전광판 아래 응원하는 관객 (도트) */
-.crowd { display: block; width: min(100%, 520px); height: auto; aspect-ratio: 130 / 36; image-rendering: pixelated; margin-top: -32px; position: relative; z-index: 0; }
+.crowd { display: block; width: min(100%, 520px); height: auto; aspect-ratio: 130 / 24; image-rendering: pixelated; margin-top: -16px; position: relative; z-index: 0; }
 .crowd[hidden] { display: none; }
 .release .cue { margin-top: -4px; }
 
@@ -471,24 +471,24 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .band-top .btn { padding: 5px 11px; font-size: 13px; box-shadow: 3px 3px 0 0 #000; }
 
 /* 앨범 커버 + 크레딧: 커버의 빨강을 별색 패널로 이어 받아 '앨범 크레딧'임이 보이게 */
-.release-credits { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 0; align-items: stretch; margin-top: 32px; }
+.release-credits { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 32px; }
 .release-credits .cover { margin: 0; line-height: 0; }
-.release-credits .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cred-panel { --spot: #b30404; background: var(--spot); color: var(--paper); display: flex; flex-direction: column; min-width: 0; }
+.release-credits .cover img { width: 100%; height: auto; display: block; }
+.cred-panel { background: rgba(244, 238, 220, 0.09); border: 1px solid rgba(244, 238, 220, 0.18); color: var(--paper); display: flex; flex-direction: column; min-width: 0; }
 .cred-head {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 12px; padding: 9px 18px;
-  background: #0e0c20; color: var(--paper); font-family: var(--f-pixel); font-size: 13px; letter-spacing: 0.1em; -webkit-font-smoothing: none;
+  background: rgba(0, 0, 0, 0.32); color: var(--paper); font-family: var(--f-pixel); font-size: 13px; letter-spacing: 0.1em; -webkit-font-smoothing: none;
 }
 .cred-head span:first-child { color: var(--postit); }
 .cred { columns: 2 15em; column-gap: 32px; padding: 16px 18px 6px; font-size: 12.5px; line-height: 1.6; }
 .cred-group { break-inside: avoid; margin: 0 0 12px; }
 .cred-title {
-  display: inline-block; margin: 0 0 4px; padding: 1px 8px; background: #0e0c20; color: var(--paper);
+  display: inline-block; margin: 0 0 4px; padding: 1px 8px; background: rgba(244, 238, 220, 0.16); color: var(--paper);
   font-family: var(--f-pixel); font-size: 12px; letter-spacing: 0.08em; -webkit-font-smoothing: none;
 }
 .cred dl { margin: 0; }
 .cred dl > div { display: flex; gap: 8px; }
-.cred dt { flex: 0 0 auto; min-width: 4.2em; color: #ffd0c6; }
+.cred dt { flex: 0 0 auto; min-width: 4.2em; color: var(--muted); }
 .cred dd { margin: 0; color: var(--paper); min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .release-credits { grid-template-columns: minmax(0, 1fr); }
@@ -518,12 +518,12 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .cal-day.sun .n { color: #ff8a7a; } .cal-day.sat .n { color: #7fb8ff; }
 .cal-day.today { box-shadow: inset 0 0 0 2px var(--postit); }
 .cal-day.today::after { content: "TODAY"; position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 9px; letter-spacing: 0.04em; color: var(--postit); }
-.cal-day.gig, .cal-day.rel { border-color: #000; box-shadow: 3px 3px 0 #000; cursor: pointer; }
-.cal-day.gig { background: var(--overdue); color: #fff; }
-.cal-day.rel { background: var(--postit); color: var(--ink); }
-.cal-day.gig .n, .cal-day.rel .n { color: inherit; }
+.cal-day.has-gig, .cal-day.has-rel { border-color: #000; box-shadow: 3px 3px 0 #000; cursor: pointer; }
+.cal-day.has-gig { background: var(--overdue); color: #fff; }
+.cal-day.has-rel { background: var(--postit); color: var(--ink); }
+.cal-day.has-gig .n, .cal-day.has-rel .n { color: inherit; }
 .cal-day .ico {
-  position: absolute; left: calc(50% - var(--w) * var(--u) / 2); top: calc(50% - var(--h) * var(--u) / 2 + 3px);
+  position: absolute; left: calc(50% - var(--w) * var(--u) / 2 + var(--dx, 0) * var(--u)); top: calc(50% - var(--h) * var(--u) / 2 + 3px);
   width: var(--u); height: var(--u); background: currentColor;
 }
 .cal-day.past:not(.sel) { opacity: 0.55; }

@@ -164,7 +164,7 @@
 
   // ── 공연 일정: 픽셀 캘린더 ─────────────────────
   (function schedule() {
-    const cal = $("#cal"), list = $("#gigs"), empty = $("#gigs-empty");
+    const cal = $("#cal"), list = $("#gigs");
     const pad = (n) => String(n).padStart(2, "0");
     const kst = (t) => new Date(t).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" }); // YYYY-MM-DD
     const todayStr = kst(Date.now());
@@ -181,8 +181,8 @@
       gig: { w: 5, h: 5, px: [[2,0],[1,1],[2,1],[3,1],[0,2],[1,2],[2,2],[3,2],[4,2],[1,3],[2,3],[3,3],[2,4]] },
       rel: { w: 7, h: 7, px: [[2,0],[3,0],[4,0],[1,1],[2,1],[3,1],[4,1],[5,1],[0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[0,3],[1,3],[2,3],[4,3],[5,3],[6,3],[0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[1,5],[2,5],[3,5],[4,5],[5,5],[2,6],[3,6],[4,6]] }
     };
-    const icon = (kind) => {
-      const ic = ICONS[kind], n = el("span", { class: "ico", "aria-hidden": "true", style: `--w:${ic.w};--h:${ic.h}` });
+    const icon = (kind, dx = 0) => {
+      const ic = ICONS[kind], n = el("span", { class: "ico", "aria-hidden": "true", style: `--w:${ic.w};--h:${ic.h};--dx:${dx}` });
       n.style.boxShadow = ic.px.map(([x, yy]) => `calc(var(--u)*${x}) calc(var(--u)*${yy}) 0 0 currentColor`).join(",");
       return n;
     };
@@ -227,13 +227,15 @@
       for (let d = 1; d <= total; d++) {
         const ds = `${key}-${pad(d)}`, here = perDay[d] || [], col = (first + d - 1) % 7;
         const cls = ["cal-day", col === 0 ? "sun" : col === 6 ? "sat" : "", ds === todayStr ? "today" : "", ds < todayStr ? "past" : "",
-          here.some((e) => e.kind === "gig") ? "gig" : here.length ? "rel" : "", sel === ds ? "sel" : ""].filter(Boolean).join(" ");
+          here.some((e) => e.kind === "gig") ? "has-gig" : here.length ? "has-rel" : "", sel === ds ? "sel" : ""].filter(Boolean).join(" ");
         const cell = here.length
           ? el("button", { class: cls, type: "button", "aria-label": `${m}월 ${d}일 ${here.map((e) => e.title).join(", ")}` })
           : el("div", { class: cls });
         cell.append(el("span", { class: "n" }, String(d)));
         if (here.length) {
-          cell.append(icon(here.some((e) => e.kind === "gig") ? "gig" : "rel"));
+          const hasGig = here.some((e) => e.kind === "gig"), hasRel = here.some((e) => e.kind === "release");
+          if (hasGig && hasRel) { cell.append(icon("gig", -4), icon("rel", 3)); cell.classList.add("both"); }
+          else cell.append(icon(hasGig ? "gig" : "rel"));
           cell.addEventListener("click", () => { sel = sel === ds ? null : ds; render(); });
         }
         grid.append(cell);
@@ -249,12 +251,6 @@
     }
     render();
 
-    if (!gigs.length) {
-      const insta = (C.band.socials || []).find((x) => x.url && /instagram/i.test(x.label));
-      empty.hidden = false;
-      empty.append(el("p", {}, "아직 확정된 공연이 없어요. 새 일정이 잡히면 이곳과 인스타그램에서 가장 먼저 알려 드릴게요."));
-      if (insta) empty.append(el("a", { class: "btn alt", href: insta.url, target: "_blank", rel: "noopener" }, el("span", {}, "인스타그램 보러 가기"), el("span", {}, "↗")));
-    }
   })();
 
   // ── 후원 ──────────────────────────────────────
@@ -398,51 +394,64 @@
     const cv = $("#crowd");
     if (!cv) return;
     const ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
-    const PW = 14, PH = 27, OY = 3, OUT = "#0e0c20";
+    const PW = 12, PH = 18, OY = 3, OUT = "#0e0c20";
     let seed = 23;
     const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const pick = (a) => a[Math.floor(rnd() * a.length)];
     const HAIR = ["#1c1a1f", "#3b2a22", "#6b4a2f", "#d9b25a", "#e8e0d0", "#c93f3f", "#2e3d63", "#7a4aa8", "#ff8fc7"];
     const SHIRT = ["#ff5a47", "#ffd23f", "#5cf2a0", "#6fb7ff", "#ff8fc7", "#b79bff", "#f4eedc", "#ff9a3d", "#3fb8af"];
-    const SKIN = ["#f6c7a0", "#e0a37e", "#b97a57"];
+    const PANTS = ["#3b4a7a", "#2b2b33", "#b09a6a", "#5a3a4a", "#4a6a4a"];
+    const SKIN = ["#f6c7a0", "#e8b08a", "#c98a62"];
     const STICK = ["#ffd23f", "#ff5a47", "#5cf2a0", "#6fb7ff", "#ff8fc7"];
     const rgb = (c) => { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
     const tone = (c, k) => `rgb(${rgb(c).map((v, i) => Math.round(v * k + [21, 19, 46][i] * (1 - k)))})`;   // 어둡게
     const lite = (c, k) => `rgb(${rgb(c).map((v) => Math.round(v + (255 - v) * k))})`;                       // 밝게
 
+    // 미니미 스타일: 머리가 크고 몸이 작은 정면 캐릭터가 두 팔을 들고 응원봉을 흔들어요
     function sprite(p, frame, dim) {
       const g = new Array(PW * PH).fill(null);
       const put = (x, y, c) => { y += OY; if (x >= 0 && x < PW && y >= 0 && y < PH) g[y * PW + x] = c; };
       const rect = (x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, c); };
       const T = (c) => (dim < 1 ? tone(c, dim) : c);
-      const shirt = T(p.shirt), shirtD = tone(p.shirt, dim * 0.72), skin = T(p.skin);
+      const shirt = T(p.shirt), shirtD = tone(p.shirt, dim * 0.72), skin = T(p.skin), pants = T(p.pants);
       const hair = T(p.hair), hairD = tone(p.hair, dim * 0.7), hairL = lite(T(p.hair), 0.35);
-      // 몸통 (뒷모습)
-      rect(3, 11, 8, 1, shirt); rect(2, 12, 10, PH, shirt); rect(11, 12, 1, PH, shirtD);
-      if (p.top === "stripe") for (let y = 15; y < PH; y += 4) rect(2, y, 10, 1, T(p.shirt2));
-      if (p.top === "hood") rect(4, 10, 6, 3, shirtD); else rect(6, 10, 2, 1, skin);
-      // 머리
-      if (p.style === "cap" || p.style === "beanie") {
-        const cap = T(p.cap), capD = tone(p.cap, dim * 0.7);
-        if (p.style === "beanie") { rect(5, 3, 4, 1, cap); rect(4, 4, 6, 3, cap); rect(4, 5, 6, 1, lite(cap, 0.3)); rect(9, 4, 1, 3, capD); rect(4, 7, 6, 2, hair); rect(9, 7, 1, 2, hairD); }
-        else { rect(5, 4, 4, 1, cap); rect(4, 5, 6, 2, cap); rect(9, 5, 1, 2, capD); rect(4, 7, 6, 2, hair); rect(9, 7, 1, 2, hairD); set7(); }
-        rect(5, 9, 4, 1, skin);
+      // 다리·신발
+      rect(4, 12, 2, 2, pants); rect(6, 12, 2, 2, tone(p.pants, dim * 0.8));
+      rect(3, 14, 3, 1, T("#f4eedc")); rect(6, 14, 3, 1, T("#f4eedc"));
+      // 몸
+      rect(4, 7, 4, 1, shirt); rect(3, 8, 6, 4, shirt); rect(8, 8, 1, 4, shirtD);
+      if (p.top === "stripe") { rect(3, 9, 6, 1, T(p.shirt2)); rect(3, 11, 6, 1, T(p.shirt2)); }
+      // 얼굴
+      rect(2, 1, 8, 6, skin); rect(3, 0, 6, 1, skin);
+      // 머리카락 / 모자
+      const style = p.style;
+      if (style === "cap" || style === "beanie") {
+        const cap = T(p.cap);
+        rect(3, 0, 6, 1, cap); rect(2, 1, 8, 2, cap); rect(9, 1, 1, 2, tone(p.cap, dim * 0.7));
+        if (style === "cap") rect(1, 3, 10, 1, lite(cap, 0.18)); else { rect(2, 2, 8, 1, lite(cap, 0.3)); put(5, -1, lite(cap, 0.4)); put(6, -1, lite(cap, 0.4)); }
+        rect(2, 3, 1, 1, hair); rect(9, 3, 1, 1, hair);
       } else {
-        rect(5, 4, 4, 1, hair); rect(4, 5, 6, 4, hair); rect(9, 5, 1, 4, hairD);
-        put(5, 5, hairL); put(6, 5, hairL);
-        if (p.style === "long") { rect(4, 9, 6, 5, hair); rect(9, 9, 1, 5, hairD); rect(5, 14, 4, 1, hair); }
-        else rect(5, 9, 4, 1, skin);
-        if (p.style === "bun") { rect(6, 2, 2, 2, hair); put(6, 2, hairL); }
+        rect(3, 0, 6, 1, hair); rect(2, 1, 8, 1, hair); rect(2, 2, 2, 1, hair); rect(8, 2, 2, 1, hair);
+        put(4, 0, hairL); put(5, 0, hairL); rect(9, 1, 1, 2, hairD);
+        if (style === "bangs") { rect(4, 2, 4, 1, hair); put(4, 2, hairL); }
+        if (style === "long") { rect(2, 3, 1, 5, hair); rect(9, 3, 1, 5, hairD); }
+        if (style === "twin") { rect(1, 2, 1, 4, hair); rect(10, 2, 1, 4, hairD); }
+        if (style === "bun") { rect(5, -2, 2, 2, hair); put(5, -2, hairL); }
+        if (style === "spike") { put(4, -1, hair); put(6, -1, hair); put(8, -1, hairD); }
       }
-      function set7() { put(6, 7, skin); }   // 모자 뒤 틈
-      // 팔: 위로 뻗어 응원봉을 들어요
+      // 얼굴 표정
+      if (p.face === "shades") { rect(3, 3, 6, 1, "#15132e"); put(5, 3, "#3a3470"); put(8, 3, "#3a3470"); }
+      else { put(4, 3, "#15132e"); put(7, 3, "#15132e"); if (p.face === "happy") { put(3, 3, "#15132e"); put(8, 3, "#15132e"); put(3, 3, skin); put(8, 3, skin); } }
+      put(3, 4, "rgba(255,120,140,0.9)" ); put(8, 4, "rgba(255,120,140,0.9)");
+      rect(5, 5, 2, 1, "#8a2433"); if (p.face !== "happy") put(5, 6, skin);
+      // 팔
       const sway = frame ? 1 : 0, sticks = [];
       const arm = (side) => {
-        const x = side < 0 ? 2 - sway : 11 + sway;
-        const hand = 4 + ((side < 0) === !!frame ? 1 : 0);
-        rect(x, hand + 1, 1, 10 - hand, shirt);
+        const x = side < 0 ? 1 - sway : 10 + sway;
+        const hand = 1 + ((side < 0) === !!frame ? 1 : 0);
+        rect(x, hand + 1, 1, 7 - hand, shirt);
+        for (let bx = Math.min(x, 3); bx <= Math.max(x, 8); bx++) if (bx < 3 || bx > 8) put(bx, 8, shirt);
         put(x, hand, skin);
-        if (sway) put(side < 0 ? 2 : 11, 11, shirt);
         sticks.push([x, hand]);
       };
       if (p.arm === "both" || p.arm === "L") arm(-1);
@@ -455,7 +464,6 @@
       }
       const c = document.createElement("canvas"); c.width = PW; c.height = PH;
       const x2 = c.getContext("2d");
-      // 응원봉 빛 번짐 → 몸 → 응원봉
       const sc = frame ? lite(p.stick, 0.45) : p.stick;
       sticks.forEach(([x, hand]) => {
         x2.fillStyle = "rgba(255,240,200,0.22)";
@@ -472,17 +480,18 @@
 
     const people = [];
     const makeRow = (yy, start, step, dim) => {
-      for (let x = start; x < W - 8; x += step) {
-        const arm = rnd() < 0.62 ? "both" : rnd() < 0.8 ? (rnd() < 0.5 ? "L" : "R") : "none";
+      for (let x = start; x < W - 6; x += step) {
+        const arm = rnd() < 0.7 ? "both" : rnd() < 0.8 ? (rnd() < 0.5 ? "L" : "R") : "none";
         const p = {
-          arm, hair: pick(HAIR), shirt: pick(SHIRT), shirt2: pick(SHIRT), skin: pick(SKIN), stick: pick(STICK), cap: pick(SHIRT),
-          style: pick(["short", "short", "long", "bun", "cap", "beanie"]), top: pick(["plain", "plain", "stripe", "hood"])
+          arm, hair: pick(HAIR), shirt: pick(SHIRT), shirt2: pick(SHIRT), skin: pick(SKIN), stick: pick(STICK), cap: pick(SHIRT), pants: pick(PANTS),
+          style: pick(["short", "short", "bangs", "long", "twin", "bun", "spike", "cap", "beanie"]), top: pick(["plain", "plain", "stripe"]),
+          face: pick(["dot", "dot", "happy", "shades"])
         };
-        people.push({ x: Math.round(x + rnd() * 2), y: yy, phase: rnd() < 0.5 ? 0 : 1, frames: [sprite(p, 0, dim), sprite(p, 1, dim)] });
+        people.push({ x: Math.round(x + rnd()), y: yy, phase: rnd() < 0.5 ? 0 : 1, frames: [sprite(p, 0, dim), sprite(p, 1, dim)] });
       }
     };
-    makeRow(H - PH - 8, 4, 13, 0.5);   // 뒷줄
-    makeRow(H - PH, -3, 14, 1);        // 앞줄
+    makeRow(H - PH - 6, 6, 12, 0.5);   // 뒷줄
+    makeRow(H - PH, -1, 11, 1);        // 앞줄
     let frame = 0;
     const draw = () => {
       ctx.clearRect(0, 0, W, H);

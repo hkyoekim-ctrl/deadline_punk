@@ -162,7 +162,10 @@ window.MP_CONFIG = {
     // 공연이 정해지면 아래 형식으로 한 줄씩 추가하세요. 비어 있으면 "일정 준비 중" 안내가 보입니다.
     // 지난 공연은 자동으로 아래로 내려가 흐리게 표시됩니다.
     // 예) { date: "2026-12-05", time: "19:00", title: "공연 이름", venue: "공연장 이름", place: "서울 마포구", note: "한 줄 메모(선택)", url: "예매·안내 링크(선택)", linkLabel: "예매하기" }
-    items: []
+    items: [
+      { date: "2026-11-19", time: "20:00", title: "GSOD LIVE", venue: "공상온도", place: "홍대" },
+      { date: "2026-11-20", time: "19:00", title: "ROCKERS ON FRIDAY", venue: "클럽 빅팀" }
+    ]
   },
 
   game: {
