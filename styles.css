@@ -362,35 +362,12 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 
 /* 로고 아래: 발매 티켓 + 게임 안내 (로고·티켓·전광판은 같은 폭) */
 .release { --w: min(100%, 520px); display: flex; flex-direction: column; align-items: center; gap: 34px; margin: 52px auto 48px; text-align: center; }
-.ticket {
-  position: relative; width: var(--w); display: grid; grid-template-columns: minmax(0, 1fr) 62px;
-  background: var(--paper); color: var(--ink); box-shadow: 6px 6px 0 var(--overdue);
-}
-/* 점선 절취선 + 위아래 반원 홈 */
-.ticket::before, .ticket::after {
-  content: ""; position: absolute; right: 62px; width: 18px; height: 18px; margin-right: -9px;
-  background: var(--night); border-radius: 50%;
-}
-.ticket::before { top: -9px; } .ticket::after { bottom: -9px; }
-.t-body {
-  display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 8px; padding: 12px 14px 10px;
-  border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: 3px;
-  background-image: radial-gradient(rgba(21, 19, 46, 0.07) 1px, transparent 1px); background-size: 6px 6px;
-}
-.t-stub {
-  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  border-left: 3px dashed color-mix(in srgb, var(--ink) 45%, transparent); background: var(--overdue); color: #fff;
-  font-family: var(--f-pixel); -webkit-font-smoothing: none;
-}
-.t-stub span { font-size: 11px; letter-spacing: 0.2em; writing-mode: vertical-rl; }
-.t-stub b { font-weight: 400; font-size: 22px; line-height: 1; letter-spacing: 0.1em; writing-mode: vertical-rl; }
-.t-bars {
-  width: 70%; height: 12px; margin-top: 2px;
-  background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px, transparent 5px 8px, var(--ink) 8px 11px, transparent 11px 13px);
-}
+.ticket { width: var(--w); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.t-art { width: clamp(150px, 42vw, 190px); height: auto; image-rendering: pixelated; margin-bottom: 10px; animation: art-bob 1.6s steps(2, jump-none) infinite; }
+@keyframes art-bob { 50% { transform: translateY(-5px); } }
 .t-label { font-family: var(--f-pixel); font-size: clamp(15px, 4.4vw, 20px); letter-spacing: 0.12em; color: var(--overdue); -webkit-font-smoothing: none; }
-.t-label::before, .t-label::after { content: "★"; font-size: 0.7em; margin: 0 8px; vertical-align: 2px; color: var(--ink); }
-.t-main { font-family: var(--f-display); font-size: clamp(17px, 5vw, 26px); line-height: 1.25; -webkit-font-smoothing: none; }
+.t-label::before, .t-label::after { content: "★"; font-size: 0.7em; margin: 0 8px; vertical-align: 2px; color: var(--postit); }
+.t-main { color: var(--paper); font-family: var(--f-display); font-size: clamp(17px, 5vw, 26px); line-height: 1.25; -webkit-font-smoothing: none; }
 .mission { margin: 10px 0; width: var(--w); color: var(--paper); font-family: var(--f-display); font-size: clamp(15px, 4.3vw, 19px); line-height: 1.8; -webkit-font-smoothing: none; }
 .mission .m-quote {
   display: block; margin-top: 8px; color: var(--postit); font-family: var(--f-display);
