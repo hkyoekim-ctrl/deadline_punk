@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>마감펑크</title>
+<meta name="description" content="밴드 불과사이의 첫 데뷔 싱글 '마감펑크' 26/11/20 발매. 마감을 피해 달리는 러너 게임으로 순위를 겨뤄 보세요.">
+<meta property="og:title" content="마감펑크">
+<meta property="og:description" content="DEADLINE PUNK · 밴드 불과사이의 첫 데뷔 싱글 '마감펑크' 26/11/20 발매.">
+<link rel="preload" href="fonts/Mulmaru.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!--BODY-START-->
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#play"><img src="img/logo.png" alt="불과사이" width="205" height="48"></a>
+    <nav class="nav" aria-label="섹션 바로가기">
+      <a href="#play">게임</a>
+      <a href="#rank">순위</a>
+      <a href="#listen">듣기</a>
+      <a href="#band">밴드</a>
+      <a href="#support">후원</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="play">
+    <div class="wrap">
+      <div class="hero-head">
+        <div class="hero-title">
+          <p class="kicker">DEADLINE PUNK</p>
+          <h1 class="title-logo"><img src="img/title-logo.png" alt="마감펑크" width="900" height="555"></h1>
+        </div>
+      </div>
+
+      <div class="release">
+        <div class="ticket">
+          <div class="t-cell t-what">
+            <span class="t-label">1ST DIGITAL SINGLE</span>
+            <span class="t-main">밴드 불과사이 첫 데뷔 싱글</span>
+          </div>
+          <div class="t-cell t-when">
+            <span class="t-label">RELEASE</span>
+            <span class="t-date">26/11/20</span>
+          </div>
+        </div>
+        <p class="mission"><strong>불과사이와 함께 달려라달려!!!!</strong></p>
+        <ul class="crew" aria-label="게임 캐릭터: 노래, 기타, 베이스, 드럼, 건반">
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/vocal.png); --delay:-0.00s"></span><span class="crew-part">노래</span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/guitar.png); --delay:-0.29s"></span><span class="crew-part">기타</span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/bass.png); --delay:-0.58s"></span><span class="crew-part">베이스</span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/drums.png); --delay:-0.87s"></span><span class="crew-part">드럼</span></li>
+          <li><span class="crew-sprite" style="--sheet:url(img/runners/keys.png); --delay:-1.16s"></span><span class="crew-part">건반</span></li>
+        </ul>
+        <a class="leader" id="leader" href="#rank" aria-live="polite" hidden></a>
+        <a class="cue" href="#stage" aria-label="게임으로 이동"><span>▼</span> PRESS START <span>▼</span></a>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="stage-empty" id="stage-empty">
+          <div class="runner">&gt;&gt; RUN FROM THE DEADLINE &gt;&gt;</div>
+          <p>게임을 준비하고 있어요. 아래에서 순위표 저장을 미리 시험해 볼 수 있습니다.</p>
+          <form class="demo-form" id="demo-form">
+            <input id="demo-name" aria-label="닉네임" maxlength="12" placeholder="닉네임 (12자)" autocomplete="nickname">
+            <button class="btn" type="submit">테스트 기록 남기기</button>
+          </form>
+        </div>
+      </div>
+      <p class="play-hint">스페이스바나 ↑로 점프, ↓로 슬라이드. 휴대폰은 화면 오른쪽을 탭하면 점프, 왼쪽을 누르면 슬라이드예요. 음표를 모으면 점수가 오르고, 커피를 마시면 마감이 뒤로 밀려나요. 잡히면 닉네임을 남겨 순위표에 올라가세요.</p>
+    </div>
+  </section>
+
+  <section id="rank">
+    <div class="wrap">
+      <p class="kicker">HIGH SCORES</p>
+      <h2>마감에서 가장 멀리 도망친 사람들</h2>
+      <div class="board" id="board" aria-live="polite">
+        <div class="board-empty">순위를 불러오는 중이에요.</div>
+      </div>
+      <div class="board-note">
+        <span id="board-mode"></span>
+        <button class="btn alt" type="button" id="board-refresh">새로고침</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="listen">
+    <div class="wrap">
+      <p class="kicker">LISTEN &amp; WATCH</p>
+      <h2>마감펑크 듣기</h2>
+      <nav class="stream-row" id="stream-list" aria-label="음악 사이트에서 듣기"></nav>
+      <p class="stream-note" id="stream-note" hidden>11월 20일 발매 후 로고를 누르면 각 음악 사이트로 이동해요.</p>
+      <div class="mv" id="mv"></div>
+      <p class="credits" data-bind="single.credits"></p>
+    </div>
+  </section>
+
+  <section id="band">
+    <div class="wrap">
+      <p class="kicker">THE BAND</p>
+      <header class="news-head">
+        <h2 data-bind="band.headline"></h2>
+        <p class="news-sub" data-bind="band.subhead"></p>
+      </header>
+      <article class="news" id="news"></article>
+      <ul class="lineup" id="members" aria-label="멤버"></ul>
+      <div class="band-links">
+        <div class="socials" id="socials"></div>
+        <p class="contact">문의 · <span data-bind="band.contact"></span></p>
+      </div>
+      <div class="gallery" id="gallery" aria-label="밴드 사진"></div>
+    </div>
+  </section>
+
+  <section id="support">
+    <div class="wrap">
+      <p class="kicker">SUPPORT</p>
+      <h2>밴드 후원하기</h2>
+      <p class="lede" data-bind="support.intro"></p>
+      <div class="support-grid" id="support-grid"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 <span data-bind="band.name"></span></span>
+    <span>DEADLINE PUNK · 마감펑크 · <span id="footer-date"></span> 발매</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="사진 크게 보기" hidden>
+  <button class="lb-btn lb-close" type="button" id="lb-close" aria-label="닫기">✕</button>
+  <button class="lb-btn lb-prev" type="button" id="lb-prev" aria-label="이전 사진">‹</button>
+  <figure><img id="lb-img" alt=""><figcaption id="lb-cap"></figcaption></figure>
+  <button class="lb-btn lb-next" type="button" id="lb-next" aria-label="다음 사진">›</button>
+</div>
+<!--BODY-END-->
+<script src="config.js"></script>
+<script src="leaderboard.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
