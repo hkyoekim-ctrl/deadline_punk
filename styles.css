@@ -102,7 +102,7 @@ h3 { font-family: var(--f-display); font-weight: 400; font-size: var(--step-1); 
 #play { padding-block: 36px 56px; }
 .hero-head {
   display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 16px 24px; flex-wrap: wrap; margin-bottom: 26px;
+  gap: 16px 24px; flex-wrap: wrap; margin-bottom: 0;
 }
 .hero-title { min-width: 0; }
 .hero-title h1 {
@@ -279,7 +279,7 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 
 /* 헤드라인 로고 */
 .hero-title .kicker { color: var(--overdue); }
-.hero-title h1.title-logo { text-shadow: none; line-height: 0; margin: 4px 0 6px; width: min(100%, 520px); }
+.hero-title h1.title-logo { text-shadow: none; line-height: 0; margin: 4px 0 0; width: min(100%, 520px); }
 .title-logo img { display: block; width: 100%; height: auto; filter: drop-shadow(6px 6px 0 #000); }
 
 /* 히어로 가운데 정렬 */
@@ -361,12 +361,18 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 }
 
 /* 로고 아래: 발매 티켓 + 게임 안내 (로고·티켓·전광판은 같은 폭) */
-.release { --w: min(100%, 520px); display: flex; flex-direction: column; align-items: center; gap: 34px; margin: 52px auto 48px; text-align: center; }
+.release { --w: min(100%, 520px); display: flex; flex-direction: column; align-items: center; gap: 34px; margin: -12px auto 18px; text-align: center; }
 .ticket { width: var(--w); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.notes { display: flex; align-items: flex-end; justify-content: center; gap: 18px; height: 28px; margin-top: 0; --u: 3px; }
+.notes i { position: relative; display: block; width: calc(var(--u) * 1); height: calc(var(--u) * 1); margin: 0 18px 0 0; box-shadow: calc(var(--u)*0) calc(var(--u)*8) 0 0 currentColor,calc(var(--u)*1) calc(var(--u)*7) 0 0 currentColor,calc(var(--u)*1) calc(var(--u)*8) 0 0 currentColor,calc(var(--u)*2) calc(var(--u)*7) 0 0 currentColor,calc(var(--u)*2) calc(var(--u)*8) 0 0 currentColor,calc(var(--u)*3) calc(var(--u)*7) 0 0 currentColor,calc(var(--u)*3) calc(var(--u)*8) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*0) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*1) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*2) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*3) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*4) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*5) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*6) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*7) 0 0 currentColor,calc(var(--u)*4) calc(var(--u)*8) 0 0 currentColor,calc(var(--u)*5) calc(var(--u)*1) 0 0 currentColor,calc(var(--u)*5) calc(var(--u)*2) 0 0 currentColor,calc(var(--u)*6) calc(var(--u)*2) 0 0 currentColor,calc(var(--u)*6) calc(var(--u)*3) 0 0 currentColor; animation: note-bob 1.2s steps(2, jump-none) infinite; }
+.notes .n1 { color: var(--postit); }
+.notes .n2 { color: var(--overdue); animation-delay: -0.4s; margin-bottom: 6px; }
+.notes .n3 { color: var(--paper); animation-delay: -0.8s; }
+@keyframes note-bob { 50% { transform: translateY(-4px); } }
 .t-label { font-family: var(--f-pixel); font-size: clamp(15px, 4.4vw, 20px); letter-spacing: 0.12em; color: var(--overdue); -webkit-font-smoothing: none; }
 .t-label::before, .t-label::after { content: "★"; font-size: 0.7em; margin: 0 8px; vertical-align: 2px; color: var(--postit); }
 .t-main { color: var(--paper); font-family: var(--f-display); font-size: clamp(17px, 5vw, 26px); line-height: 1.25; -webkit-font-smoothing: none; }
-.mission { margin: 10px 0; width: var(--w); color: var(--paper); font-family: var(--f-display); font-size: clamp(15px, 4.3vw, 19px); line-height: 1.8; -webkit-font-smoothing: none; }
+.mission { margin: 10px 0 0; width: var(--w); color: var(--paper); font-family: var(--f-display); font-size: clamp(15px, 4.3vw, 19px); line-height: 1.8; -webkit-font-smoothing: none; }
 .mission .m-quote {
   display: block; margin-top: 8px; color: var(--postit); font-family: var(--f-display);
   font-size: clamp(19px, 5.4vw, 26px); line-height: 1.35; -webkit-font-smoothing: none;
@@ -380,7 +386,7 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 @keyframes cue-bob { 50% { transform: translateY(3px); } }
 
 /* 달리는 다섯 캐릭터 (img/runners: tools/make_runners.py 로 생성) */
-.crew { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; gap: clamp(10px, 3vw, 28px); --px: 3; }
+.crew { list-style: none; margin: -14px 0 0; padding: 0; display: flex; justify-content: center; gap: clamp(10px, 3vw, 28px); --px: 3; }
 .crew li { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .crew-sprite {
   display: block; width: calc(16px * var(--px)); height: calc(24px * var(--px));
