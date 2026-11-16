@@ -164,38 +164,21 @@
 
   // ── 공연 일정: 픽셀 캘린더 ─────────────────────
   (function schedule() {
-    const cal = $("#cal"), list = $("#gigs");
-    const pad = (n) => String(n).padStart(2, "0");
+    const list = $("#gigs");
     const kst = (t) => new Date(t).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" }); // YYYY-MM-DD
     const todayStr = kst(Date.now());
     const gigs = ((C.schedule && C.schedule.items) || []).filter((g) => g && g.date).map((g) => ({ ...g, kind: "gig" }));
-    const relDate = kst(C.single.releaseAt);
-    const events = [...gigs, { kind: "release", date: relDate, title: "마감펑크 발매", note: "모든 음원 사이트에서 만나요" }];
-    const byDate = (a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""));
-    const upcoming = gigs.filter((g) => g.date >= todayStr).sort(byDate);
-    const base = (upcoming[0] || { date: relDate >= todayStr ? relDate : todayStr }).date;
-    let y = +base.slice(0, 4), m = +base.slice(5, 7), sel = null;
-
-    // 도트 아이콘: 1px 요소 + box-shadow 로 그림
-    const ICONS = {
-      gig: { w: 5, h: 5, px: [[2,0],[1,1],[2,1],[3,1],[0,2],[1,2],[2,2],[3,2],[4,2],[1,3],[2,3],[3,3],[2,4]] },
-      rel: { w: 7, h: 7, px: [[2,0],[3,0],[4,0],[1,1],[2,1],[3,1],[4,1],[5,1],[0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[0,3],[1,3],[2,3],[4,3],[5,3],[6,3],[0,4],[1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[1,5],[2,5],[3,5],[4,5],[5,5],[2,6],[3,6],[4,6]] }
-    };
-    const icon = (kind, dx = 0) => {
-      const ic = ICONS[kind], n = el("span", { class: "ico", "aria-hidden": "true", style: `--w:${ic.w};--h:${ic.h};--dx:${dx}` });
-      n.style.boxShadow = ic.px.map(([x, yy]) => `calc(var(--u)*${x}) calc(var(--u)*${yy}) 0 0 currentColor`).join(",");
-      return n;
-    };
+    const events = [...gigs, { kind: "release", date: kst(C.single.releaseAt), title: "마감펑크 발매", note: "모든 음원 사이트에서 만나요" }]
+      .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
 
     function row(e) {
       const isPast = e.date < todayStr;
-      const d = new Date(`${e.date}T12:00:00+09:00`);
       const wd = ["일", "월", "화", "수", "목", "금", "토"][new Date(Date.UTC(+e.date.slice(0, 4), +e.date.slice(5, 7) - 1, +e.date.slice(8, 10))).getUTCDay()];
       const days = Math.round((Date.parse(e.date) - Date.parse(todayStr)) / 86400000);
       const tag = isPast ? "종료" : days === 0 ? "TODAY" : `D-${days}`;
       const meta = [e.time, [e.venue, e.place].filter(Boolean).join(" · ")].filter(Boolean).join(" · ");
       const ready = e.url && !isPlaceholder(e.url) && !isPast;
-      const li = el("li", { class: ["gig", e.kind === "release" ? "rel" : "", isPast ? "past" : "", sel === e.date ? "sel" : ""].join(" ").replace(/\s+/g, " ").trim() },
+      return el("li", { class: ["gig", e.kind === "release" ? "rel" : "", isPast ? "past" : ""].join(" ").replace(/\s+/g, " ").trim() },
         el("div", { class: "gig-date" }, el("span", { class: "m" }, `${+e.date.slice(5, 7)}월`), el("span", { class: "d" }, String(+e.date.slice(8, 10))), el("span", { class: "w" }, wd)),
         el("div", { class: "gig-body" },
           el("h3", { class: "gig-title" }, e.title || "공연"),
@@ -204,53 +187,8 @@
         el("div", { class: "gig-act" },
           el("span", { class: "gig-tag" }, tag),
           ready ? el("a", { class: "btn", href: e.url, target: "_blank", rel: "noopener" }, el("span", {}, e.linkLabel || "자세히"), el("span", {}, "↗")) : null));
-      void d;
-      return li;
     }
-
-    function render() {
-      const key = `${y}-${pad(m)}`;
-      const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
-      const total = new Date(Date.UTC(y, m, 0)).getUTCDate();
-      const evs = events.filter((e) => e.date.startsWith(key)).sort(byDate);
-      const perDay = {};
-      evs.forEach((e) => (perDay[+e.date.slice(8, 10)] = perDay[+e.date.slice(8, 10)] || []).push(e));
-
-      const nav = (label, dir, txt) => {
-        const b = el("button", { class: "cal-nav", type: "button", "aria-label": label }, txt);
-        b.addEventListener("click", () => { m += dir; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } sel = null; render(); });
-        return b;
-      };
-      const grid = el("div", { class: "cal-grid" });
-      ["일", "월", "화", "수", "목", "금", "토"].forEach((w, i) => grid.append(el("div", { class: "cal-dow" + (i === 0 ? " sun" : i === 6 ? " sat" : "") }, w)));
-      for (let i = 0; i < first; i++) grid.append(el("div", { class: "cal-day blank", "aria-hidden": "true" }));
-      for (let d = 1; d <= total; d++) {
-        const ds = `${key}-${pad(d)}`, here = perDay[d] || [], col = (first + d - 1) % 7;
-        const cls = ["cal-day", col === 0 ? "sun" : col === 6 ? "sat" : "", ds === todayStr ? "today" : "", ds < todayStr ? "past" : "",
-          here.some((e) => e.kind === "gig") ? "has-gig" : here.length ? "has-rel" : "", sel === ds ? "sel" : ""].filter(Boolean).join(" ");
-        const cell = here.length
-          ? el("button", { class: cls, type: "button", "aria-label": `${m}월 ${d}일 ${here.map((e) => e.title).join(", ")}` })
-          : el("div", { class: cls });
-        cell.append(el("span", { class: "n" }, String(d)));
-        if (here.length) {
-          const hasGig = here.some((e) => e.kind === "gig"), hasRel = here.some((e) => e.kind === "release");
-          if (hasGig && hasRel) { cell.append(icon("gig", -4), icon("rel", 3)); cell.classList.add("both"); }
-          else cell.append(icon(hasGig ? "gig" : "rel"));
-          cell.addEventListener("click", () => { sel = sel === ds ? null : ds; render(); });
-        }
-        grid.append(cell);
-      }
-      cal.replaceChildren(
-        el("div", { class: "cal-head" }, nav("이전 달", -1, "◀"), el("div", { class: "cal-title" }, `${y}.${pad(m)}`), nav("다음 달", 1, "▶")),
-        grid,
-        el("div", { class: "cal-legend" }, el("span", { class: "lg g" }, "공연"), el("span", { class: "lg r" }, "발매일"), el("span", { class: "lg t" }, "오늘"))
-      );
-      list.replaceChildren();
-      if (!evs.length) list.append(el("li", { class: "gig none" }, "이 달에는 아직 일정이 없어요."));
-      else evs.forEach((e) => list.append(row(e)));
-    }
-    render();
-
+    events.forEach((e) => list.append(row(e)));
   })();
 
   // ── 후원 ──────────────────────────────────────
