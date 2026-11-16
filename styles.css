@@ -471,27 +471,28 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .band-top .btn { padding: 5px 11px; font-size: 13px; box-shadow: 3px 3px 0 0 #000; }
 
 /* 앨범 커버 + 크레딧: 커버의 빨강을 별색 패널로 이어 받아 '앨범 크레딧'임이 보이게 */
-.release-credits { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 32px; }
-.release-credits .cover { margin: 0; line-height: 0; }
+.release-credits { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: stretch; margin-top: 32px; }
+.release-credits .cover { margin: 0; line-height: 0; align-self: start; }
 .release-credits .cover img { width: 100%; height: auto; display: block; }
 .cred-panel { background: rgba(244, 238, 220, 0.09); border: 1px solid rgba(244, 238, 220, 0.18); color: var(--paper); display: flex; flex-direction: column; min-width: 0; }
 .cred-head {
-  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 12px; padding: 9px 18px;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 12px; padding: 6px 14px;
   background: rgba(0, 0, 0, 0.32); color: var(--paper); font-family: var(--f-pixel); font-size: 13px; letter-spacing: 0.1em; -webkit-font-smoothing: none;
 }
 .cred-head span:first-child { color: var(--postit); }
-.cred { columns: 2 15em; column-gap: 32px; padding: 16px 18px 6px; font-size: 12.5px; line-height: 1.6; }
-.cred-group { break-inside: avoid; margin: 0 0 12px; }
+.cred { columns: 3 11em; column-gap: 22px; padding: 8px 14px 0; font-size: 11px; line-height: 1.4; }
+.cred-group { break-inside: avoid; margin: 0 0 6px; }
 .cred-title {
   display: inline-block; margin: 0 0 4px; padding: 1px 8px; background: rgba(244, 238, 220, 0.16); color: var(--paper);
   font-family: var(--f-pixel); font-size: 12px; letter-spacing: 0.08em; -webkit-font-smoothing: none;
 }
 .cred dl { margin: 0; }
 .cred dl > div { display: flex; gap: 8px; }
-.cred dt { flex: 0 0 auto; min-width: 4.2em; color: var(--muted); }
+.cred dt { flex: 0 0 auto; min-width: 3.4em; color: var(--muted); }
 .cred dd { margin: 0; color: var(--paper); min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
-  .release-credits { grid-template-columns: minmax(0, 1fr); }
+  .release-credits { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .cred { columns: 2 10em; }
   .release-credits .cover { max-width: 300px; }
 }
 
