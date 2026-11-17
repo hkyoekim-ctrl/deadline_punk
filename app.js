@@ -332,7 +332,7 @@
     const cv = $("#crowd");
     if (!cv) return;
     const ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
-    const PW = 12, PH = 18, OY = 3, OUT = "#0e0c20";
+    const PW = 12, PH = 18, OY = 3, OUT = "#0a0505";
     let seed = 23;
     const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const pick = (a) => a[Math.floor(rnd() * a.length)];
@@ -378,8 +378,8 @@
         if (style === "spike") { put(4, -1, hair); put(6, -1, hair); put(8, -1, hairD); }
       }
       // 얼굴 표정
-      if (p.face === "shades") { rect(3, 3, 6, 1, "#15132e"); put(5, 3, "#3a3470"); put(8, 3, "#3a3470"); }
-      else { put(4, 3, "#15132e"); put(7, 3, "#15132e"); if (p.face === "happy") { put(3, 3, "#15132e"); put(8, 3, "#15132e"); put(3, 3, skin); put(8, 3, skin); } }
+      if (p.face === "shades") { rect(3, 3, 6, 1, "#0b0707"); put(5, 3, "#6a4a48"); put(8, 3, "#6a4a48"); }
+      else { put(4, 3, "#0b0707"); put(7, 3, "#0b0707"); if (p.face === "happy") { put(3, 3, "#0b0707"); put(8, 3, "#0b0707"); put(3, 3, skin); put(8, 3, skin); } }
       put(3, 4, "rgba(255,120,140,0.9)" ); put(8, 4, "rgba(255,120,140,0.9)");
       rect(5, 5, 2, 1, "#8a2433"); if (p.face !== "happy") put(5, 6, skin);
       // 팔
