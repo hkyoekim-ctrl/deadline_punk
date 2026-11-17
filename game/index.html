@@ -68,7 +68,7 @@ input:focus{border-color:var(--yellow)}
 <body>
 <div id="wrap"><div id="stage">
   <canvas id="c" width="640" height="360" aria-label="마감펑크 러너 게임 화면"></canvas>
-  <div id="hud" class="hidden"><div><span class="lbl">SCORE</span><b id="hScore">0</b></div><div class="hi"><span class="lbl">HI</span><b id="hBest">0</b></div></div>
+  <div id="hud" class="hidden"><div><span class="lbl">DISTANCE</span><b id="hScore">0m</b></div><div class="hi"><span class="lbl">BEST</span><b id="hBest">0m</b></div></div>
   <div id="hudBtns">
     <button id="btnMute" title="소리 (M)" aria-label="소리 켜기/끄기">♪</button>
     <button id="btnPause" title="일시정지 (P)" aria-label="일시정지">II</button>
@@ -96,7 +96,7 @@ input:focus{border-color:var(--yellow)}
       <div class="gcol">
         <div class="gh">아이템</div>
         <div>♪ 음표 30개 = 피버 타임</div>
-        <div class="gs">피버 5초: 무적, 점수 2배, 악기 휘두르며 장애물 부수기</div>
+        <div class="gs">피버 5초: 무적, 거리 2배, 악기 휘두르며 장애물 부수기</div>
         <div>아이스 아메리카노 = 4초 부스트</div>
         <div>생맥주 = 6초 ROCK! 모드</div>
         <div class="gs">부딪히면 마감 시계가 다가오고 점점 커져요</div>
@@ -121,7 +121,7 @@ input:focus{border-color:var(--yellow)}
 
   <div id="ovOver" class="ov ovOver hidden">
     <div class="big">마감펑크!</div>
-    <div class="scoreline">SCORE <b id="oScore">0</b></div>
+    <div class="scoreline">마감으로부터 <b id="oScore">0m</b> 도망쳤다.</div>
     <div class="best" id="oBest"></div>
     <form id="fSubmit" autocomplete="off">
       <div class="frow">
@@ -132,7 +132,7 @@ input:focus{border-color:var(--yellow)}
     </form>
     <div id="oMsg" class="msg"></div>
     <div class="srow">
-      <button id="btnImg" type="button" class="share">이미지로 저장</button>
+      <button id="btnImg" type="button" class="share">이미지 저장</button>
       <button id="btnShare" type="button" class="share">링크 공유</button>
     </div>
     <button id="btnRetry" class="ghost">다시 달리기</button>
@@ -168,6 +168,8 @@ const GRAV = 1150, JUMP_V = -365, MAX_SPEED = 300, START_SPEED = 120;
 const GAP_MAX = 58, GAP_REGEN = 3, HIT_COST = 22, COFFEE_GAIN = 22;
 const FEVER_NOTES = 30, FEVER_TIME = 5, SWING_TIME = 6, SWING_PTS = 50;
 const NOTE_PTS = 5, COFFEE_PTS = 20, DIST_PER_PT = 8;
+// 콤보: 음표 먹기·장애물 넘기·부수기로 쌓임 (10마다 배수 +0.5, 최대 ×3), 부딪히면 리셋
+const COMBO_STEP = 10, MULT_MAX_STEPS = 4, RUSH_EVERY = 40, RUSH_WARN = 1.6, RUSH_TIME = 6, RUSH_BONUS = 100;
 const BOOST_TIME = 4, BOOST_MUL = 1.4, BOOST_GAP = 4, CHAIR_EXTRA = 35, PEN_EXTRA = 90, DJUMP_V = -330;  // 아이스 아메리카노 · 굴러오는 의자
 
 const cv = document.getElementById('c');
@@ -311,6 +313,9 @@ const ART = { ok: false, img: {}, atlas: null };
   const files = { sheet: 'assets/spritesheet.png', sky: 'assets/bg_sky.png', far: 'assets/bg_far.png', near: 'assets/bg_near.png', ground: 'assets/bg_ground.png' };
   const jobs = Object.entries(files).map(([k, src]) => new Promise((res, rej) => { const im = new Image(); im.onload = () => { ART.img[k] = im; res(); }; im.onerror = rej; im.src = src; }));
   jobs.push(new Promise(res => { const im = new Image(); im.onload = () => { ART.logo = im; res(); }; im.onerror = res; im.src = 'assets/title-logo.png'; }));
+  ['suburb', 'weird', 'weirder'].forEach((n, i) => ['sky', 'far', 'near', 'ground'].forEach(k => {
+    const im = new Image(); im.onload = () => { ART.img[`s${i + 1}_${k}`] = im; }; im.src = `assets/bg_${n}_${k}.png`;
+  }));
   jobs.push(fetch('assets/atlas.json').then(r => r.json()).then(j => { ART.atlas = j; }));
   Promise.all(jobs).then(() => { buildCharSheets(); buildSky(); ART.ok = true; buildSelect(); }).catch(() => { ART.ok = false; });
 })();
@@ -535,11 +540,23 @@ let prevState = 'play';
 let best = store.get('best', 0);
 let g, p;
 function reset() {
-  g = { t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, bonus: 0, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
+  g = { stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, bonus: 0, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
         nextObs: 220, nextCoffee: 2400 + Math.random() * 1200, shake: 0, dieT: 0, scroll: 0, hits: 0 };
   p = { y: GROUND, vy: 0, ground: true, slide: 0, slideHeld: false, holdJump: false, buf: 0, coyote: 0, inv: 0, anim: 0 };
 }
 reset();
+// 달릴수록 배경이 바뀜: 기록(m) 0 → 도시, 600 → 교외, 1500 → 웃긴 세계, 3000 → 점점 더 이상한 세계
+const STAGES = [{ from: 0, name: '야근 도시' }, { from: 600, name: '한적한 교외' }, { from: 1500, name: '웃긴 세계' }, { from: 3000, name: '점점 더 이상한 세계' }];
+const stageOf = m => { let i = 0; STAGES.forEach((st, k) => { if (m >= st.from) i = k; }); return i; };
+const stageReady = i => i === 0 || !!(ART.img[`s${i}_sky`] && ART.img[`s${i}_far`] && ART.img[`s${i}_near`] && ART.img[`s${i}_ground`]);
+const mult = () => 1 + Math.min(MULT_MAX_STEPS, Math.floor(g.combo / COMBO_STEP)) * 0.5;
+function addCombo(n = 1) {
+  const before = mult(); g.combo += n; if (g.combo > g.maxCombo) g.maxCombo = g.combo; g.comboPop = 0.35;
+  if (mult() > before) { g.rushMsg = 1.0; g.rushMsgText = `COMBO ×${mult()}!`; sfx.coffee(); }
+}
+const pts = n => { g.bonus += n * mult(); };
+// 기록은 '마감으로부터 도망친 거리': 점수 정수를 m 로 보여주고 1000m 부터 km
+const fmtDist = n => n >= 1000 ? (Math.floor(n / 10) / 100).toFixed(2) + 'km' : Math.floor(n) + 'm';
 const score = () => Math.floor(g.dist / DIST_PER_PT + g.bonus);
 
 /* ---------------- 입력 ---------------- */
@@ -665,8 +682,8 @@ function gameOver() {
   const s = score();
   const isBest = s > best;
   if (isBest) { best = s; store.set('best', best); }
-  $('oScore').textContent = s.toLocaleString('ko-KR');
-  $('oBest').textContent = isBest ? '★ 개인 최고기록 갱신!' : '개인 최고 ' + best.toLocaleString('ko-KR');
+  $('oScore').textContent = fmtDist(s);
+  $('oBest').textContent = isBest ? '★ 개인 최고기록 갱신!' : '개인 최고 ' + fmtDist(best);
   $('iName').value = store.get('name', '');
   $('iCheer').value = store.get('cheer', '');
   setFormLock(false);
@@ -731,7 +748,7 @@ function shareUrl() {
   if (!u) u = location.href;
   try { const x = new URL(u); x.hash = ''; ['verse', 'drop', 'bgm'].forEach(k => x.searchParams.delete(k)); return x.toString(); } catch (e) { return u; }
 }
-function shareText(s) { return `마감펑크 러너에서 ${s.toLocaleString('ko-KR')}점! 나는 마감에게서 여기까지 도망쳤다. 너는? 🏃 불과사이 데뷔 싱글 '마감펑크' 2026.11.20 OUT`; }
+function shareText(s) { return `마감펑크! 마감으로부터 ${fmtDist(s)} 멀어졌다. 너는? 🏃 불과사이 데뷔 싱글 '마감펑크' 11.20 release`; }
 function shareNote(t, err) { const m = $('oMsg'); m.className = err ? 'msg err' : 'msg'; m.textContent = t; }
 const isTouch = matchMedia('(pointer:coarse)').matches;
 
@@ -742,54 +759,86 @@ async function makeCard() {
   const F = n => `${n}px "Mulmaru", system-ui, sans-serif`;
   const s = score(), name = cleanText($('iName').value, NAME_MAX), cheer = cleanText($('iCheer').value, CHEER_MAX);
   const ch = CHARS.find(k => k.id === curChar) || CHARS[0];
-  // 배경 + 픽셀 테두리
-  x.fillStyle = '#120d1d'; x.fillRect(0, 0, CW, CH);
-  x.fillStyle = '#ff3d7f'; x.fillRect(0, 0, CW, 12); x.fillRect(0, CH - 12, CW, 12); x.fillRect(0, 0, 12, CH); x.fillRect(CW - 12, 0, 12, CH);
-  x.fillStyle = '#ffd23f'; for (let i = 24; i < CW - 24; i += 24) { x.fillRect(i, 24, 12, 6); x.fillRect(i, CH - 30, 12, 6); }
-  // 상단: 마감펑크 로고 (게임 화면 대신)
-  x.fillStyle = '#0c0818'; x.fillRect(54, 74, 972, 552);
-  x.fillStyle = '#ff3d7f'; x.fillRect(54, 74, 972, 6); x.fillRect(54, 620, 972, 6);
+  const PINK = '#ff3d7f', GOLD = '#ffd23f', INK = '#0c0818', CREAM = '#f7f1e3', LAV = '#a99cc8';
+  const R = (px, py, w, h, col) => { x.fillStyle = col; x.fillRect(px, py, w, h); };
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  // 배경: 끊김 없는 세로 그라데이션 + 별 + 이어지는 도시 실루엣
+  const gr = x.createLinearGradient(0, 0, 0, CH); gr.addColorStop(0, '#110c1c'); gr.addColorStop(0.55, '#1a1230'); gr.addColorStop(0.85, '#2b1a46'); gr.addColorStop(1, '#3a1d4e');
+  x.fillStyle = gr; x.fillRect(0, 0, CW, CH);
+  const glow = x.createRadialGradient(CW / 2, 1180, 20, CW / 2, 1180, 620); glow.addColorStop(0, 'rgba(255,61,127,0.28)'); glow.addColorStop(1, 'rgba(255,61,127,0)');
+  x.fillStyle = glow; x.fillRect(0, 700, CW, 650);
+  for (let i = 0; i < 90; i++) { const sx = Math.floor(rnd() * 90) * 12, sy = Math.floor(rnd() * 70) * 12, big = rnd() > 0.85; if ((sy < 280 && sx > 280 && sx < 800) || (sy >= 280 && sy < 980 && sx > 60 && sx < 1020)) continue; R(sx, sy, big ? 12 : 6, big ? 12 : 6, big ? '#ffffff' : '#6b5c99'); }
+  const skyline = (minTop, maxTop, body, edge, litChance) => { let bxx = -6; while (bxx < CW) { const bw = 54 + Math.floor(rnd() * 5) * 12, top = minTop + Math.floor(rnd() * ((maxTop - minTop) / 12)) * 12; R(bxx, top, bw, CH - top, body); R(bxx, top, bw, 6, edge);
+    for (let wy = top + 24; wy < CH - 40; wy += 30) for (let wx = bxx + 12; wx < bxx + bw - 12; wx += 18) if (rnd() < litChance) R(wx, wy, 6, 12, rnd() > 0.5 ? '#ffd23f' : '#ff3d7f');
+    bxx += bw + 6; } };
+  skyline(1020, 1140, '#1d1436', '#2f2257', 0.16);
+  skyline(1170, 1270, '#120c20', '#241a40', 0.10);
+  // 테두리: 분홍 두 겹 + 노란 점선 + 모서리 장식
+  R(0, 0, CW, 12, PINK); R(0, CH - 12, CW, 12, PINK); R(0, 0, 12, CH, PINK); R(CW - 12, 0, 12, CH, PINK);
+  R(12, 12, CW - 24, 6, '#8f1f4d'); R(12, CH - 18, CW - 24, 6, '#8f1f4d'); R(12, 12, 6, CH - 24, '#8f1f4d'); R(CW - 18, 12, 6, CH - 24, '#8f1f4d');
+  x.fillStyle = GOLD; for (let i = 36; i < CW - 36; i += 24) { x.fillRect(i, 28, 12, 6); x.fillRect(i, CH - 34, 12, 6); }
+  for (let i = 36; i < CH - 36; i += 24) { x.fillRect(28, i, 6, 12); x.fillRect(CW - 34, i, 6, 12); }
+  for (const [cx0, cy0, dx, dy] of [[40, 40, 1, 1], [CW - 40, 40, -1, 1], [40, CH - 40, 1, -1], [CW - 40, CH - 40, -1, -1]]) { R(cx0 - (dx < 0 ? 36 : 0), cy0 - (dy < 0 ? 6 : 0), 36, 6, PINK); R(cx0 - (dx < 0 ? 6 : 0), cy0 - (dy < 0 ? 36 : 0), 6, 36, PINK); }
+  x.textBaseline = 'alphabetic';
+  const fit = (str, size, maxW) => { x.font = F(size); while (size > 28 && x.measureText(str).width > maxW) { size -= 2; x.font = F(size); } return size; };
+  const bolt = (bx2, by2, sc, col) => { x.fillStyle = col; x.beginPath(); x.moveTo(bx2 + 20 * sc, by2); x.lineTo(bx2, by2 + 34 * sc); x.lineTo(bx2 + 14 * sc, by2 + 34 * sc); x.lineTo(bx2 + 4 * sc, by2 + 66 * sc); x.lineTo(bx2 + 34 * sc, by2 + 24 * sc); x.lineTo(bx2 + 18 * sc, by2 + 24 * sc); x.closePath(); x.fill(); };
+  // 1) 헤더: 불과사이 제6의 멤버 ○○님의 기록
+  x.textAlign = 'center';
+  x.fillStyle = PINK; x.font = F(44); x.fillText('불과사이 제6의 멤버', CW / 2, 128);
+  const nm = `${name || '익명의 작가'}`, tail = ' 님의 기록';
+  const hs = fit(nm + tail, 76, 880); x.font = F(hs);
+  const tw1 = x.measureText(nm).width, tw2 = x.measureText(tail).width, hx = CW / 2 - (tw1 + tw2) / 2;
+  x.textAlign = 'left'; x.fillStyle = '#05030b'; x.fillText(nm, hx + 5, 213 + 5); x.fillText(tail, hx + tw1 + 5, 213 + 5);
+  x.fillStyle = GOLD; x.fillText(nm, hx, 213); x.fillStyle = CREAM; x.fillText(tail, hx + tw1, 213);
+  // 2) 점수: 크게
+  const sx0 = 72, sy0 = 296, sw0 = 936, sh0 = 300;
+  R(sx0 + 10, sy0 + 10, sw0, sh0, '#05030b'); R(sx0, sy0, sw0, sh0, INK);
+  R(sx0, sy0, sw0, 8, PINK); R(sx0, sy0 + sh0 - 8, sw0, 8, PINK); R(sx0, sy0, 8, sh0, PINK); R(sx0 + sw0 - 8, sy0, 8, sh0, PINK);
+  R(sx0 + 20, sy0 + 20, sw0 - 40, 3, '#3a2a5c'); R(sx0 + 20, sy0 + sh0 - 23, sw0 - 40, 3, '#3a2a5c');
+  bolt(sx0 + 36, sy0 + 110, 1.1, GOLD); bolt(sx0 + sw0 - 74, sy0 + 110, 1.1, GOLD);
+  const sTxt = fmtDist(s), ss = fit(sTxt, 240, sw0 - 260); x.font = F(ss); x.textAlign = 'center';
+  const sy = sy0 + sh0 / 2 + ss * 0.34;
+  x.lineJoin = 'round'; x.lineWidth = 22; x.strokeStyle = '#8f1f4d'; x.strokeText(sTxt, CW / 2 + 10, sy + 10);
+  x.lineWidth = 18; x.strokeStyle = INK; x.strokeText(sTxt, CW / 2, sy);
+  x.fillStyle = GOLD; x.fillText(sTxt, CW / 2, sy);
+  // 3) 캐릭터 + 한마디 말풍선
+  const fr = ART.ok && ART.atlas.frames[ch.id + '_portrait'];
+  const ps = 300, py = 640, px = cheer ? 84 : Math.round((CW - ps) / 2);
+  R(px, py, ps, ps, '#2a1f3d');
+  if (fr) x.drawImage(ART.img.sheet, fr.x, fr.y, fr.w, fr.h, px, py, ps, ps);
+  else if (ART.ok) { const keep = curChar; const t = document.createElement('canvas'); t.width = 32; t.height = 32; spr('run1', 8, 4, t.getContext('2d')); curChar = keep; x.drawImage(t, px, py, ps, ps); }
+  if (cheer) {
+    x.font = F(40); x.textAlign = 'left';
+    const bw = 520, maxW = bw - 70, wordWrap = (t) => { const out = []; let line = ''; for (const w of t.split(/(\s+)/)) { if (!w) continue; if (x.measureText(line + w).width <= maxW) line += w; else { if (line.trim()) out.push(line.trim()); line = w.trimStart(); if (x.measureText(line).width > maxW) { const cs = wrapText(x, line, maxW); line = cs.pop() || ''; out.push(...cs); } } } if (line.trim()) out.push(line.trim()); return out; }, lines = (() => { const l = wordWrap(cheer); if (l.length > 3) { l.length = 3; l[2] = l[2].slice(0, -1) + '…'; } return l; })(), bh = Math.max(156, 80 + lines.length * 56), bxx2 = 436, byy = py + (ps - bh) / 2, ty = py + ps / 2;
+    const box = (bx, by, w, h, col) => { R(bx + 12, by, w - 24, h, col); R(bx, by + 12, w, h - 24, col); R(bx + 6, by + 6, w - 12, h - 12, col); };
+    const tail = (g, col) => { for (let j = -3; j <= 3; j++) { const w = (4 - Math.abs(j)) * 9 + g; R(bxx2 - w, ty + j * 9 - 5 - g, w + 8, 10 + g * 2, col); } };
+    box(bxx2 + 10, byy + 12, bw, bh, 'rgba(0,0,0,0.45)');
+    box(bxx2 - 12, byy - 12, bw + 24, bh + 24, INK); tail(12, INK);
+    box(bxx2 - 6, byy - 6, bw + 12, bh + 12, PINK); tail(6, PINK);
+    box(bxx2, byy, bw, bh, CREAM); tail(0, CREAM);
+    R(bxx2 + 14, byy + 6, bw - 28, 6, '#ffffff'); R(bxx2 + 14, byy + bh - 14, bw - 28, 8, '#eadfc4');
+    // 따옴표 장식
+    x.font = F(96); x.fillStyle = INK; x.fillText('“', bxx2 - 4 + 4, byy + 66 + 4); x.fillStyle = PINK; x.fillText('“', bxx2 - 4, byy + 66);
+    x.font = F(40); x.fillStyle = '#1a1423'; const t0 = byy + (bh - lines.length * 56) / 2 + 44; lines.forEach((l, i) => x.fillText(l, bxx2 + 38, t0 + i * 56));
+    R(bxx2 + bw - 52, byy + bh - 30, 12, 12, PINK); R(bxx2 + bw - 36, byy + bh - 30, 12, 12, GOLD);
+  }
+  // 4) 하단: 마감펑크 로고(작게)
   if (ART.logo) {
-    const lh = 470, lw = Math.round(lh * ART.logo.width / ART.logo.height), lx = Math.round((CW - lw) / 2), ly = 104;
-    const tint = document.createElement('canvas'); tint.width = ART.logo.width; tint.height = ART.logo.height;
-    const tx = tint.getContext('2d'); tx.drawImage(ART.logo, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#ff3d7f'; tx.fillRect(0, 0, tint.width, tint.height);
+    const lh = 210, lw = Math.round(lh * ART.logo.width / ART.logo.height), lx = Math.round((CW - lw) / 2), ly = 1030;
     x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
-    x.drawImage(tint, lx + 10, ly + 10, lw, lh);
+    x.save(); x.shadowColor = 'rgba(255,61,127,0.95)'; x.shadowBlur = 36; x.drawImage(ART.logo, lx, ly, lw, lh); x.shadowBlur = 16; x.drawImage(ART.logo, lx, ly, lw, lh); x.restore();
     x.drawImage(ART.logo, lx, ly, lw, lh);
     x.imageSmoothingEnabled = false;
-  } else { x.textAlign = 'center'; x.fillStyle = '#ff3d7f'; x.font = F(150); x.fillText('마감펑크', CW / 2, 380); }
-  x.textBaseline = 'alphabetic'; x.textAlign = 'center';
-  // 캐릭터 + 점수
-  const fr = ART.ok && ART.atlas.frames[ch.id + '_portrait'];
-  const px = 96, py = 700;
-  x.fillStyle = '#2a1f3d'; x.fillRect(px - 8, py - 8, 208, 208);
-  if (fr) x.drawImage(ART.img.sheet, fr.x, fr.y, fr.w, fr.h, px, py, 192, 192);
-  else if (ART.ok) { const keep = curChar; const t = document.createElement('canvas'); t.width = 32; t.height = 32; spr('run1', 8, 4, t.getContext('2d')); curChar = keep; x.drawImage(t, px, py, 192, 192); }
-  x.textAlign = 'left';
-  x.fillStyle = '#a99cc8'; x.font = F(34); x.fillText(`${ch.role} 멤버로 달린 ${name || '익명의 작가'}`, 340, 736);
-  x.fillStyle = '#a99cc8'; x.font = F(40); x.fillText('SCORE', 340, 806);
-  x.fillStyle = '#ffd23f'; x.font = F(108); x.fillText(s.toLocaleString('ko-KR'), 340, 892);
-  // 응원 메시지 (말풍선)
-  if (cheer) {
-    x.font = F(38);
-    const lines = wrapText(x, `“${cheer}”`, 860).slice(0, 2), bh = 40 + lines.length * 52;
-    x.fillStyle = '#f7f1e3'; x.fillRect(96, 936, 888, bh);
-    x.fillRect(150, 926, 20, 10); x.fillRect(160, 916, 10, 10);
-    x.fillStyle = '#1a1423'; lines.forEach((l, i) => x.fillText(l, 120, 936 + 58 + i * 52));
   }
-  // 하단 홍보 문구
-  x.textAlign = 'center';
-  x.fillStyle = '#ff3d7f'; x.font = F(58); x.fillText('마감펑크 · DEADLINE PUNK', CW / 2, 1186);
-  x.fillStyle = '#f7f1e3'; x.font = F(34); x.fillText('불과사이 데뷔 싱글 · 2026.11.20 OUT', CW / 2, 1238);
-  let host = ''; try { const u = new URL(shareUrl()); host = /^https?:$/.test(u.protocol) && !/claude|localhost|127\.0\.0\.1/.test(u.hostname) ? u.host + u.pathname.replace(/\/(index\.html)?$/, '') : ''; } catch (e) {}
-  x.fillStyle = '#a99cc8'; x.font = F(28); x.fillText(host ? `불과사이랑 달려라달려! → ${host}` : '불과사이랑 달려라달려!', CW / 2, 1290);
+  R(44, 1276, CW - 88, 28, 'rgba(8,5,14,0.85)');
+  x.textAlign = 'center'; x.font = F(16); x.fillStyle = '#9d92c0'; x.fillText('© 2026 불과사이. All rights reserved.', CW / 2, 1296);
   return new Promise(res => c.toBlob(b => res(b), 'image/png'));
 }
 function wrapText(x, t, maxW) {
   const out = []; let line = '';
   for (const ch of Array.from(t)) { if (x.measureText(line + ch).width > maxW && line) { out.push(line); line = ch; } else line += ch; }
   if (line) out.push(line);
-  if (out.length > 2) out[1] = out[1].slice(0, -1) + '…';
+  if (out.length > 2) out[1] = Array.from(out[1]).slice(0, -1).join('') + '…';  // 이모지(서로게이트 쌍)를 반으로 자르지 않게 글자 단위로
   return out;
 }
 let cardUrl = '';
@@ -801,16 +850,12 @@ $('btnImg').addEventListener('click', async e => {
     if (!blob) throw new Error('no blob');
     const fname = `deadline-punk-${score()}.png`;
     send({ type: 'magam:share', kind: 'image', score: score(), character: curChar });
-    const file = new File([blob], fname, { type: 'image/png' });
-    if (isTouch && navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: '마감펑크 러너', text: shareText(score()) + '\n' + shareUrl() }); shareNote('공유했어요! 고마워요 🙌'); return; }
-      catch (err) { if (err && err.name === 'AbortError') return; }
-    }
-    if (cardUrl) URL.revokeObjectURL(cardUrl);
+        if (cardUrl) URL.revokeObjectURL(cardUrl);
     cardUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = cardUrl; a.download = fname; document.body.append(a); a.click(); a.remove();
+    if (!isTouch) { const a = document.createElement('a'); a.href = cardUrl; a.download = fname; document.body.append(a); a.click(); a.remove(); }
+    $('cardHelp').textContent = isTouch ? '이미지를 길게 눌러서 저장하세요' : '다운로드가 시작됐어요. 안 되면 이미지를 오른쪽 클릭해서 저장하세요';
     $('cardImg').src = cardUrl; $('ovCard').classList.remove('hidden');
-    shareNote('점수 이미지를 저장했어요. SNS에 자랑해 주세요!');
+    shareNote(isTouch ? '이미지를 길게 눌러 저장하세요!' : '기록 이미지를 저장했어요. SNS에 자랑해 주세요!');
   } catch (err) { shareNote('이미지를 만들지 못했어요. 다시 시도해 주세요.', true); }
   finally { btn.disabled = false; }
 });
@@ -879,7 +924,9 @@ function spawnObstacle() {
     }
   }
   const s = g.speed;
-  g.nextObs = g.dist + w + s * rnd(0.72, 1.35) + rnd(40, 90) - Math.min(30, g.t * 0.4);
+  const ramp = Math.max(0.6, 1 - Math.max(0, g.t - 50) / 200);          // 3 · 50초부터 서서히 빽빽해져 110초쯤 최대
+  const rushF = g.rush && g.rush.phase === 'on' ? 0.6 : 1;                // 4 · 러시 중엔 장애물이 연달아
+  g.nextObs = g.dist + w + (s * rnd(0.72, 1.35) * ramp + rnd(40, 90) - Math.min(30, g.t * 0.4)) * rushF;
 }
 
 /* ---------------- 업데이트 ---------------- */
@@ -897,6 +944,18 @@ function swingBox() {
 function burst(x, y, n, cols, sp = 80) {
   for (let i = 0; i < n; i++) g.parts.push({ x, y, vx: rnd(-sp, sp), vy: rnd(-sp * 1.4, -10), life: rnd(0.4, 0.9), c: cols[i % cols.length], s: Math.random() < 0.3 ? 2 : 1 });
 }
+function updateRush(dt) {  // 40초마다 '마감 러시': 경고 → 6초간 장애물 연타 → 안 맞으면 보너스
+  if (!g.rush) {
+    if (g.t >= g.nextRush) { g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits }; sfx.hit(); }
+    return;
+  }
+  g.rush.t -= dt;
+  if (g.rush.t > 0) return;
+  if (g.rush.phase === 'warn') { g.rush.phase = 'on'; g.rush.t = RUSH_TIME; g.nextObs = Math.min(g.nextObs, g.dist + 30); return; }
+  const clear = g.hits === g.rush.hits;
+  if (clear) { pts(RUSH_BONUS); addCombo(5); g.gap = Math.min(GAP_MAX + 10, g.gap + 10); g.rushMsg = 1.8; g.rushMsgText = `RUSH CLEAR +${Math.round(RUSH_BONUS * mult())}`; sfx.coffee(); }
+  g.rush = null; g.nextRush += RUSH_EVERY;
+}
 function update(dt) {
   g.t += dt;
   g.speed = Math.min(MAX_SPEED, START_SPEED + g.t * 3.1);
@@ -907,10 +966,18 @@ function update(dt) {
   if (g.boostPop > 0) g.boostPop -= dt;
   const dx = g.speed * (g.boost > 0 ? BOOST_MUL : 1) * dt;
   g.dist += dx; g.scroll += dx;
+  if (g.combo >= COMBO_STEP) g.bonus += dx / DIST_PER_PT * (mult() - 1);
+  if (g.comboPop > 0) g.comboPop -= dt;
+  { const ns = stageOf(score());
+    if (ns > g.stage && stageReady(ns)) { g.prevStage = g.stage; g.stage = ns; g.stageFade = 0; g.stageMsg = 3; sfx.coffee(); }
+    if (g.stageFade < 1) g.stageFade = Math.min(1, g.stageFade + dt / 1.5);
+    if (g.stageMsg > 0) g.stageMsg -= dt; }
+  if (g.rushMsg > 0) g.rushMsg -= dt;
+  updateRush(dt);
   if (g.swing > 0) g.swing -= dt;
   if (g.swing > 0 || g.fever > 0) g.swingT += dt;  // 피버 중에도 악기를 휘두름
   if (g.fever > 0) {  // 피버: 거리 점수 2배, 마감을 밀어냄
-    g.fever -= dt; g.bonus += dx / DIST_PER_PT; g.gap = Math.min(GAP_MAX + 10, g.gap + 8 * dt);
+    g.fever -= dt; g.bonus += dx / DIST_PER_PT * mult(); g.gap = Math.min(GAP_MAX + 10, g.gap + 8 * dt);
     if (Math.random() < 0.5) g.parts.push({ x: PX + rnd(0, 16), y: p.y - rnd(0, 24), vx: rnd(-80, -30), vy: rnd(-40, 10), life: 0.4, c: Math.random() < 0.5 ? '#ffd23f' : '#ff3b6b', s: 1 });
   }
 
@@ -924,13 +991,14 @@ function update(dt) {
   const sb = swingBox();
   for (const o of g.obs) {
     o.x -= dx;
-    if (o.type === 'pen') o.x -= PEN_EXTRA * dt;
-    if (o.type === 'chair') { o.x -= CHAIR_EXTRA * dt; o.roll = (o.roll || 0) + dt; }
+    const late = Math.min(60, Math.max(0, g.t - 60) * 1.2);
+    if (o.type === 'pen') o.x -= (PEN_EXTRA + late) * dt;
+    if (o.type === 'chair') { o.x -= (CHAIR_EXTRA + late / 2) * dt; o.roll = (o.roll || 0) + dt; }
     if (o.type === 'mail') o.y = o.base + Math.round(Math.sin(g.t * 5 + o.ph) * 2);
     if (sb && !o.hit) {  // 악기 휘두르기: 닿는 장애물 파괴 +50
       const hb = hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y);
       if (overlap(sb, hb)) {
-        o.hit = true; o.x = -999; g.bonus += SWING_PTS; sfx.hit(); g.shake = 0.1;
+        o.hit = true; o.x = -999; pts(SWING_PTS); addCombo(); sfx.hit(); g.shake = 0.1;
         burst(hb.x + hb.w / 2, hb.y + hb.h / 2, 18, ['#ffffff', '#b9b3d6', '#ffd23f'], 150);
         continue;
       }
@@ -938,14 +1006,15 @@ function update(dt) {
     if (!o.hit && (p.inv <= 0 || g.fever > 0)) {
       const hb = ART.ok ? hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y) : { x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 3 };
       if (overlap(pb, hb) && g.fever > 0) {  // 피버 중엔 장애물을 부숨
-        o.hit = true; o.x = -999; g.bonus += 10; sfx.note();
+        o.hit = true; o.x = -999; pts(10); addCombo(); sfx.note();
         burst(PX + 16, pb.y + 8, 16, ['#ffd23f', '#ff3b6b', '#ffffff'], 140);
       } else if (overlap(pb, hb)) {
-        o.hit = true; p.inv = 1.1; g.gap -= HIT_COST; g.shake = 0.25; g.hits++;
+        o.hit = true; p.inv = 1.1; g.gap -= HIT_COST; if (g.combo >= COMBO_STEP) { g.rushMsg = 0.8; g.rushMsgText = 'COMBO BREAK'; } g.combo = 0; g.shake = 0.25; g.hits++;
         sfx.hit(); burst(o.x + o.w / 2, o.y + o.h / 2, 14, ['#f7f1e3', '#e63946', '#ffd23f'], 110);
       }
     }
   }
+  for (const o of g.obs) if (!o.hit && !o.passed && o.x + o.w < PX) { o.passed = true; addCombo(); pts(1); }  // 무사히 넘김
   g.obs = g.obs.filter(o => o.x > -40);
 
   // 아이템
@@ -956,7 +1025,7 @@ function update(dt) {
     if (overlap({ x: pb.x - 2, y: pb.y - 2, w: pb.w + 4, h: pb.h + 4 }, ib)) {
       it.taken = true;
       if (it.type === 'note') {
-        g.bonus += NOTE_PTS; sfx.note(); burst(it.x + 4, it.y + 4, 5, ['#ffd23f'], 50);
+        pts(NOTE_PTS); addCombo(); sfx.note(); burst(it.x + 4, it.y + 4, 5, ['#ffd23f'], 50);
         if (g.fever <= 0 && ++g.notes >= FEVER_NOTES) { g.notes = 0; g.fever = FEVER_TIME; sfx.coffee(); g.shake = 0.15; }
       }
       else if (it.type === 'beer') { g.swing = SWING_TIME; g.swingT = 0; sfx.coffee(); g.shake = 0.12; burst(it.x + 6, it.y + 5, 16, ['#ffd23f', '#ffffff', '#f2a93b'], 100); }
@@ -1167,7 +1236,39 @@ function drawSign(t, c = ctx) {
     c.fillStyle = '#f7f1e3'; c.fillText(word, sx + SIGN.w / 2, SIGN.y + 5); c.textAlign = 'left';
   }
 }
+const STAGE_SIGN = { 1: [106, 1106], 2: [66, 1146], 3: [44, 1168] };  // 단계 near 이미지에 그려진 전광판 x (y78, 68x22)
+function drawStageSign(c, st, t) {
+  const xs = STAGE_SIGN[st], img = ART.img[`s${st}_near`]; if (!xs || !img) return;
+  const o = Math.floor(g.scroll * 0.4) % img.width, word = SIGN.words[Math.floor(t / SIGN.every) % SIGN.words.length];
+  c.font = '12px ' + KFONT; c.textBaseline = 'top'; c.textAlign = 'center'; c.fillStyle = '#f7f1e3';
+  for (const base of [-o, img.width - o]) for (const x of xs) {
+    const sx = base + x; if (sx + SIGN.w < 0 || sx > W) continue;
+    c.fillText(word, sx + SIGN.w / 2, SIGN.y + 5);
+  }
+  c.textAlign = 'left';
+}
+function drawStageImgs(c, st, t = 0) {  // 이미지 한 벌(sky/far/near/ground)을 그대로 그림
+  const I = ART.img, tl = (img, f) => { const o = Math.floor(g.scroll * f) % img.width; c.drawImage(img, -o, 0); c.drawImage(img, img.width - o, 0); };
+  c.drawImage(I[`s${st}_sky`], 0, 0);
+  tl(I[`s${st}_far`], 0.15); tl(I[`s${st}_near`], 0.4); drawStageSign(c, st, t);
+  const gi = I[`s${st}_ground`], gw = gi.width, go = Math.floor(g.scroll) % gw;
+  for (let x = -go; x < W; x += gw) c.drawImage(gi, x, GROUND);
+}
 function drawBG(t) {
+  if (ART.ok && (g.stage > 0 || g.stageFade < 1)) {
+    const cur = g.stage, prev = g.prevStage;
+    if (g.stageFade < 1 && prev != null) {
+      if (prev === 0) drawCityBG(t); else drawStageImgs(ctx, prev, t);
+      if (!SKY.stage) { SKY.stage = document.createElement('canvas'); SKY.stage.width = W; SKY.stage.height = H; }
+      const sx = SKY.stage.getContext('2d'); sx.clearRect(0, 0, W, H); drawStageImgs(sx, cur, t);
+      ctx.globalAlpha = g.stageFade; ctx.drawImage(SKY.stage, 0, 0); ctx.globalAlpha = 1;
+    } else drawStageImgs(ctx, cur, t);
+    if (state === 'play' && g.fever > 0) { ctx.globalAlpha = 0.35 + 0.1 * Math.sin(t * 12); ctx.fillStyle = '#5a1a62'; ctx.fillRect(0, 0, W, GROUND); ctx.globalAlpha = 1; }
+    return;
+  }
+  drawCityBG(t);
+}
+function drawCityBG(t) {
   if (ART.ok) {
     const sk = drawSky(dayU());
     if (state === 'play' && g.fever > 0) { ctx.globalAlpha = 0.35 + 0.1 * Math.sin(t * 12); ctx.fillStyle = '#5a1a62'; ctx.fillRect(0, 0, W, GROUND); ctx.globalAlpha = 1; }
@@ -1513,9 +1614,29 @@ function drawOpening(ot, t) {
 }
 
 let hudLast = -1;
+function drawCombo() {
+  const m = mult();
+  if (g.combo >= 3) {  // 왼쪽 위 기록 아래
+    const pop = g.comboPop > 0 ? 1 + g.comboPop * 0.6 : 1;
+    ktextOutlined(`${g.combo} COMBO`, 6, 30, m >= 3 ? '#ff3d7f' : '#ffd23f', Math.round(12 * pop), '#1a1423', 'left');
+    if (m > 1) ktextOutlined(`거리 ×${m}`, 6, 43, '#f7f1e3', 10, '#1a1423', 'left');
+  }
+  if (g.rush) {  // 마감 러시: 경고 깜빡임 + 붉은 테두리
+    const warn = g.rush.phase === 'warn', blink = Math.floor(g.t * 8) % 2;
+    ctx.globalAlpha = warn ? 0.5 : 0.35; ctx.fillStyle = blink ? '#e63946' : '#8c1c2e';
+    ctx.fillRect(0, 0, W, 4); ctx.fillRect(0, GROUND - 3, W, 3);
+    ctx.globalAlpha = 1;
+    ktextOutlined(warn ? '! 마감 러시 !' : '마감 러시!  ' + Math.ceil(g.rush.t), W / 2, 52, blink ? '#ff6b6b' : '#ffd23f', warn ? 18 : 12, '#1a1423');
+  } else if (g.rushMsg > 0) {
+    ctx.globalAlpha = Math.min(1, g.rushMsg / 0.4);
+    ktextOutlined(g.rushMsgText, W / 2, 52, g.rushMsgText.startsWith('COMBO BREAK') ? '#a99cc8' : '#ffd23f', 14, '#1a1423');
+    ctx.globalAlpha = 1;
+  }
+}
 function drawHUD() {
+  drawCombo();
   const s = score();
-  if (s !== hudLast) { hudLast = s; $('hScore').textContent = s.toLocaleString('ko-KR'); $('hBest').textContent = Math.max(best, s).toLocaleString('ko-KR'); }
+  if (s !== hudLast) { hudLast = s; $('hScore').textContent = fmtDist(s); $('hBest').textContent = fmtDist(Math.max(best, s)); }
   // 마감 게이지 (간격)
   const bw = 80, bx = 152, by = 7;
   const ratio = Math.max(0, Math.min(1, g.gap / GAP_MAX));

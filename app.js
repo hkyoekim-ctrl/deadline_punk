@@ -228,6 +228,8 @@
     : document.createTextNode(`전체 공개 순위 · 상위 ${C.leaderboard.size}명`));
 
   const fmt = new Intl.NumberFormat("ko-KR");
+  // 기록(score)은 마감에게서 도망친 거리(m). 1000m 부터는 km 로 표기
+  const fmtDist = (n) => (n < 1000 ? `${n}m` : `${(Math.floor(n / 10) / 100).toFixed(2)}km`);
   const when = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
 
   // 로고 아래 전광판: 현재 1위 + 여러 사람의 닉네임·응원 메시지를 돌려가며 송출
@@ -237,7 +239,7 @@
       const key = `${r.name}|${r.score}|${r.created_at}`;
       if (seen.has(key) || out.length >= 24) return;
       seen.add(key);
-      out.push(r.message ? `“${r.message}” — ${r.name}` : `${r.name} 님 ${fmt.format(r.score)}점 질주 중`);
+      out.push(r.message ? `“${r.message}” — ${r.name}` : `${r.name} 님 ${fmtDist(r.score)} 질주 중`);
     });
     return out;
   }
@@ -264,7 +266,7 @@
       el("div", { class: "led-row" }, el("span", { class: "led-inner" },
         el("span", { class: "led-name" }, top.name),
         part ? el("span", { class: "led-part" }, `[${part}]`) : null,
-        el("span", { class: "led-score" }, fmt.format(top.score)))),
+        el("span", { class: "led-score" }, fmtDist(top.score)))),
       ticker(feed.length ? feed : [`${top.name} 님이 마감에서 가장 멀리 도망쳤어요`])
     );
   }
@@ -291,17 +293,15 @@
       const cls = [i < 3 ? `top${i + 1}` : "", isMine ? "mine" : ""].join(" ").trim() || null;
       tbody.append(el("tr", { class: cls },
         el("td", { class: "rank" }, String(i + 1).padStart(2, "0")),
-        el("td", { class: "name" }, r.name, r.message ? el("span", { class: "cheer" }, r.message) : null),
+        el("td", { class: "name" }, r.name),
         el("td", { class: "char" }, MPLeaderboard.CHARACTERS[r.character] || "-"),
-        el("td", { class: "num" }, fmt.format(r.score)),
-        el("td", { class: "num dist" }, r.distance ? `${fmt.format(r.distance)}m` : "-"),
-        el("td", { class: "when" }, r.created_at ? when.format(new Date(r.created_at)) : "")
+        el("td", { class: "msg" }, r.message || ""),
+        el("td", { class: "num" }, fmtDist(r.score))
       ));
     });
     board.replaceChildren(el("table", {},
       el("thead", {}, el("tr", {},
-        el("th", {}, "#"), el("th", {}, "NAME"), el("th", { class: "char" }, "PART"), el("th", { class: "num" }, "SCORE"),
-        el("th", { class: "num dist" }, "DIST"), el("th", { class: "when" }, "DATE"))),
+        el("th", {}, "#"), el("th", {}, "NAME"), el("th", { class: "char" }, "PART"), el("th", {}, "MESSAGE"), el("th", { class: "num" }, "DISTANCE"))),
       tbody));
   }
   $("#board-refresh").addEventListener("click", renderBoard);

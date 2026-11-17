@@ -4,8 +4,8 @@
   const NAME_MAX = 12;
   const MESSAGE_MAX = 40;
   // 피버(2배)·악기 휘두르기(+50) 보너스를 포함한 상한. supabase/functions/submit-score 와 같은 값
-  const MAX_POINTS_PER_SEC = 100;
-  const SLACK = 500;
+  const MAX_POINTS_PER_SEC = 400;
+  const SLACK = 1000;
   // Edge Function 과 같은 정리: 제어문자·보이지 않는 문자 제거, 공백 하나로
   const clean = (v) => String(v ?? "").normalize("NFC").replace(/\s+/g, " ")
     .replace(/[\u0000-\u001f\u007f\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]/g, "").trim();
