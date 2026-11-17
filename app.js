@@ -304,7 +304,11 @@
         el("th", {}, "#"), el("th", {}, "NAME"), el("th", { class: "char" }, "PART"), el("th", {}, "MESSAGE"), el("th", { class: "num" }, "DISTANCE"))),
       tbody));
   }
-  $("#board-refresh").addEventListener("click", renderBoard);
+  $("#board-refresh").addEventListener("click", (e) => {
+    const b = e.currentTarget;
+    b.classList.remove("spin"); void b.offsetWidth; b.classList.add("spin");
+    renderBoard();
+  });
   renderBoard();
 
   // 게임(또는 데모 폼)에서 들어온 기록 하나를 저장하고 결과를 돌려줍니다.

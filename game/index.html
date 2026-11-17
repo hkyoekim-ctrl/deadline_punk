@@ -51,6 +51,15 @@ input:focus{border-color:var(--yellow)}
 .ovGuide .big{font-size:1.4em}
 .gh{color:var(--pink);margin-bottom:.15em}
 .gs{color:var(--dim);font-size:.85em}
+.ctrl{display:flex;gap:.6em;width:100%;max-width:46em;justify-content:center;margin:.2em 0}
+.cc{flex:1 1 0;min-width:0;background:rgba(0,0,0,.55);border:2px solid var(--pink);padding:.5em .8em;text-align:left;font-size:1em;line-height:1.5;word-break:keep-all}
+.cc .gh{font-size:.8em;margin-bottom:.25em;color:var(--yellow)}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:.5em;padding:.15em 0}
+.act{font-size:1.1em;color:var(--ink)}
+.keys{font-size:.95em;color:var(--yellow);text-align:right}
+.keys .kb{font-size:.95em;border:2px solid var(--yellow);color:var(--yellow);background:rgba(255,210,63,.1);padding:.05em .4em;margin:0 0 0 .25em}
+.cnote{font-size:.6em;text-align:center}
+@media (max-width:560px){.ctrl{flex-direction:column}.cc{font-size:1.15em}}
 #ovSelect{background:rgba(14,9,24,.78);gap:.45em}
 #ovPause{z-index:7}
 #chars{display:flex;gap:.5em;flex-wrap:wrap;justify-content:center}
@@ -77,29 +86,23 @@ input:focus{border-color:var(--yellow)}
   <div id="ovTitle" class="ov ovGuide">
     <div class="kicker">DEADLINE PUNK · 불과사이</div>
     <div class="big">조작 방법</div>
-    <div class="guide">
-      <div class="gcol">
+    <div class="ctrl">
+      <div class="cc">
         <div class="gh">PC</div>
-        <div><span class="kb">SPACE</span><span class="kb">↑</span> 점프</div>
-        <div class="gs">공중에서 한 번 더 = 2단 점프</div>
-        <div class="gs">길게 누르면 더 높이</div>
-        <div><span class="kb">↓</span> 슬라이드</div>
+        <div class="crow"><span class="act">점프</span><span class="keys"><span class="kb">SPACE</span><span class="kb">↑</span><span class="kb">W</span></span></div>
+        <div class="crow"><span class="act">슬라이드</span><span class="keys"><span class="kb">↓</span><span class="kb">S</span></span></div>
       </div>
-      <div class="gcol">
+      <div class="cc">
         <div class="gh">모바일</div>
-        <div>화면 오른쪽 탭 = 점프</div>
-        <div class="gs">공중에서 한 번 더 탭 = 2단 점프</div>
-        <div>왼쪽 누르기 = 슬라이드</div>
-        <div class="gs">아래로 스와이프도 슬라이드</div>
-        <div class="gs">캐릭터를 고르면 시작 전까지 연습할 수 있어요</div>
+        <div class="crow"><span class="act">점프</span><span class="keys">화면 탭</span></div>
+        <div class="crow"><span class="act">슬라이드</span><span class="keys">아래로 스와이프</span></div>
       </div>
-      <div class="gcol">
-        <div class="gh">아이템</div>
-        <div>♪ 음표 30개 = 피버 타임</div>
-        <div class="gs">피버 5초: 무적, 거리 2배, 악기 휘두르며 장애물 부수기</div>
-        <div>아이스 아메리카노 = 4초 부스트</div>
-        <div>생맥주 = 6초 ROCK! 모드</div>
-        <div class="gs">부딪히면 마감 시계가 다가오고 점점 커져요</div>
+    </div>
+    <div class="gs cnote">공중에서 한 번 더 = 2단 점프 · 길게 누르면 더 높이 · 캐릭터를 고르면 시작 전까지 연습할 수 있어요</div>
+    <div class="guide">
+      <div class="gcol" style="text-align:center;font-size:1.1em">
+        <div>마감을 도와줄 다양한 아이템을 사용해보세요.</div>
+        <div>마감 시계에 부딪히지 않도록 멀리 도망쳐 보세요.</div>
       </div>
     </div>
     <button id="btnStart">▶ 시작하기</button>
@@ -169,8 +172,8 @@ const GAP_MAX = 58, GAP_REGEN = 3, HIT_COST = 22, COFFEE_GAIN = 22;
 const FEVER_NOTES = 30, FEVER_TIME = 5, SWING_TIME = 6, SWING_PTS = 50;
 const NOTE_PTS = 5, COFFEE_PTS = 20, DIST_PER_PT = 8;
 // 콤보: 음표 먹기·장애물 넘기·부수기로 쌓임 (10마다 배수 +0.5, 최대 ×3), 부딪히면 리셋
-const COMBO_STEP = 10, MULT_MAX_STEPS = 4, RUSH_EVERY = 40, RUSH_WARN = 1.6, RUSH_TIME = 6, RUSH_BONUS = 100;
-const BOOST_TIME = 4, BOOST_MUL = 1.4, BOOST_GAP = 4, CHAIR_EXTRA = 35, PEN_EXTRA = 90, DJUMP_V = -330;  // 아이스 아메리카노 · 굴러오는 의자
+const STORM_TIME = 2.4, STORM_EXTRA = 170, SHIELD_TIME = 5, COMBO_STEP = 10, MULT_MAX_STEPS = 4, RUSH_EVERY = 40, RUSH_WARN = 4, RUSH_TIME = 4.5, RUSH_BONUS = 100;
+const BOOST_TIME = 4, BOOST_MUL = 1.4, BOOST_GAP = 4, CHAIR_EXTRA = 35, PEN_EXTRA = 90, DJUMP_V = -330, DJUMP3_V = -240, DRINK_Y = 32;  // 아이스 아메리카노 · 굴러오는 의자
 
 const cv = document.getElementById('c');
 const ctx = cv.getContext('2d');
@@ -540,24 +543,31 @@ let prevState = 'play';
 let best = store.get('best', 0);
 let g, p;
 function reset() {
-  g = { stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, bonus: 0, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
+  g = { sheets: [], storm: null, shield: 0, fx: null, nextCombo: 10, stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
         nextObs: 220, nextCoffee: 2400 + Math.random() * 1200, shake: 0, dieT: 0, scroll: 0, hits: 0 };
   p = { y: GROUND, vy: 0, ground: true, slide: 0, slideHeld: false, holdJump: false, buf: 0, coyote: 0, inv: 0, anim: 0 };
 }
 reset();
 // 달릴수록 배경이 바뀜: 기록(m) 0 → 도시, 600 → 교외, 1500 → 웃긴 세계, 3000 → 점점 더 이상한 세계
-const STAGES = [{ from: 0, name: '야근 도시' }, { from: 600, name: '한적한 교외' }, { from: 1500, name: '웃긴 세계' }, { from: 3000, name: '점점 더 이상한 세계' }];
+const STAGES = [{ from: 0, name: '야근 도시' }, { from: 1000, name: '한적한 교외' }, { from: 1500, name: '웃긴 세계' }, { from: 3000, name: '점점 더 이상한 세계' }];
 const stageOf = m => { let i = 0; STAGES.forEach((st, k) => { if (m >= st.from) i = k; }); return i; };
 const stageReady = i => i === 0 || !!(ART.img[`s${i}_sky`] && ART.img[`s${i}_far`] && ART.img[`s${i}_near`] && ART.img[`s${i}_ground`]);
-const mult = () => 1 + Math.min(MULT_MAX_STEPS, Math.floor(g.combo / COMBO_STEP)) * 0.5;
+// 큰 글씨 이펙트 (FEVER / ROCK / 콤보 이벤트 등)
+function bigFx(text, sub, color, dur = 1.6) { g.fx = { text, sub, color, t: 0, dur }; }
+const COMBO_MILESTONES = [10, 25, 50, 75, 100];
+const nextMilestone = c => { for (const m of COMBO_MILESTONES) if (c < m) return m; return Math.floor(c / 50) * 50 + 50; };
 function addCombo(n = 1) {
-  const before = mult(); g.combo += n; if (g.combo > g.maxCombo) g.maxCombo = g.combo; g.comboPop = 0.35;
-  if (mult() > before) { g.rushMsg = 1.0; g.rushMsgText = `COMBO ×${mult()}!`; sfx.coffee(); }
+  g.combo += n; if (g.combo > g.maxCombo) g.maxCombo = g.combo; g.comboPop = 0.35;
+  if (g.combo >= g.nextCombo) {  // 콤보 이벤트: 마감 게이지 회복 + 큰 글씨
+    const hit = g.combo; g.nextCombo = nextMilestone(g.combo);
+    g.gap = Math.min(GAP_MAX + 10, g.gap + 12);
+    bigFx(`${hit} COMBO!`, '딱 한 번만 제게 기회를 주세요~', hit >= 50 ? '#ff3d7f' : '#ffd23f');
+    sfx.coffee(); g.shake = 0.12; burst(PX + 6, GROUND - 14, 18, ['#ffd23f', '#ff3d7f', '#ffffff'], 110);
+  }
 }
-const pts = n => { g.bonus += n * mult(); };
 // 기록은 '마감으로부터 도망친 거리': 점수 정수를 m 로 보여주고 1000m 부터 km
 const fmtDist = n => n >= 1000 ? (Math.floor(n / 10) / 100).toFixed(2) + 'km' : Math.floor(n) + 'm';
-const score = () => Math.floor(g.dist / DIST_PER_PT + g.bonus);
+const score = () => Math.floor(g.dist / DIST_PER_PT);  // 거리 = 실제로 달린 만큼만
 
 /* ---------------- 입력 ---------------- */
 const practicing = () => state === 'opening' && !!sel.chosen && !sel.open;
@@ -602,23 +612,28 @@ addEventListener('keyup', e => {
   if (k === 'Space' || k === 'ArrowUp' || k === 'KeyW') jumpRelease();
   if (k === 'ArrowDown' || k === 'KeyS') slideRelease();
 });
-// 터치: 오른쪽 = 점프, 왼쪽 35% = 슬라이드, 아래로 스와이프 = 슬라이드
+// 터치: 탭 = 점프, 아래로 스와이프 = 슬라이드
 const touches = new Map();
 cv.addEventListener('pointerdown', e => {
   e.preventDefault();
   initAudio();
   if (state !== 'play' && !practicing()) return;
   const r = cv.getBoundingClientRect();
-  const left = (e.clientX - r.left) / r.width < 0.35;
-  touches.set(e.pointerId, { y: e.clientY, kind: left ? 'slide' : 'jump', swiped: false });
+  const left = false;   // 탭 = 점프(화면 어디든), 아래로 스와이프 = 슬라이드
+  touches.set(e.pointerId, { y: e.clientY, kind: left ? 'slide' : 'jump', swiped: false, t0: performance.now(), gy: p.y, gnd: p.ground || p.coyote > 0 });
   if (left) slidePress(); else jumpPress();
 });
 cv.addEventListener('pointermove', e => {
   const t = touches.get(e.pointerId); if (!t || t.swiped) return;
   const r = cv.getBoundingClientRect();
-  if (e.clientY - t.y > r.height * 0.08) {
+  if (e.clientY - t.y > r.height * 0.06) {
     t.swiped = true;
-    if (t.kind === 'jump') { jumpRelease(); t.kind = 'slide'; slidePress(); }
+    if (t.kind === 'jump') {
+      jumpRelease(); t.kind = 'slide';
+      // 스와이프였다면 pointerdown 에서 일으킨 점프를 취소 (땅에서 막 떴을 때만)
+      if (t.gnd && !p.air2 && performance.now() - t.t0 < 500) { p.buf = 0; p.press = false; if (!p.ground && p.y > t.gy - 40) { p.y = t.gy; p.vy = 0; p.ground = true; } }
+      slidePress();
+    }
   }
 });
 const ptrEnd = e => {
@@ -944,17 +959,26 @@ function swingBox() {
 function burst(x, y, n, cols, sp = 80) {
   for (let i = 0; i < n; i++) g.parts.push({ x, y, vx: rnd(-sp, sp), vy: rnd(-sp * 1.4, -10), life: rnd(0.4, 0.9), c: cols[i % cols.length], s: Math.random() < 0.3 ? 2 : 1 });
 }
-function updateRush(dt) {  // 40초마다 '마감 러시': 경고 → 6초간 장애물 연타 → 안 맞으면 보너스
+function updateRush(dt) {  // 40초마다 '마감 러시': 안내(3단 점프로 에너지 드링크) → 보호막 → 종이 폭풍 (보호막 없이 맞으면 즉사)
   if (!g.rush) {
-    if (g.t >= g.nextRush) { g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits }; sfx.hit(); }
+    if (g.t >= g.nextRush) {
+      g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits, drop: 0.5, n: 0 };
+      g.obs = g.obs.filter(o => o.x < PX - 40 || o.x > W);  // 화면 앞 장애물 정리
+      bigFx('마감 러시!', '3단 점프로 에너지 드링크를 먹어라!', '#ff6b6b', 2.0); sfx.hit();
+    }
     return;
   }
   g.rush.t -= dt;
+  if (g.rush.phase === 'warn') {
+    g.rush.drop -= dt;
+    if (g.rush.drop <= 0 && g.shield <= 0 && g.rush.n < 2) { g.items.push({ type: 'energy', x: W + 12, y: GROUND - DRINK_Y - 86, ph: 0 }); g.rush.n++; g.rush.drop = 1.3; }  // 에너지 드링크는 러시당 딱 2개
+    if (g.shield > 0 && g.rush.t > 0.8) g.rush.t = 0.8;  // 마셨으면 곧바로 폭풍 시작
+  }
   if (g.rush.t > 0) return;
-  if (g.rush.phase === 'warn') { g.rush.phase = 'on'; g.rush.t = RUSH_TIME; g.nextObs = Math.min(g.nextObs, g.dist + 30); return; }
+  if (g.rush.phase === 'warn') { g.rush.phase = 'on'; g.rush.t = RUSH_TIME; g.storm = { t: STORM_TIME, acc: 0 }; return; }
   const clear = g.hits === g.rush.hits;
-  if (clear) { pts(RUSH_BONUS); addCombo(5); g.gap = Math.min(GAP_MAX + 10, g.gap + 10); g.rushMsg = 1.8; g.rushMsgText = `RUSH CLEAR +${Math.round(RUSH_BONUS * mult())}`; sfx.coffee(); }
-  g.rush = null; g.nextRush += RUSH_EVERY;
+  if (clear) { addCombo(5); g.gap = Math.min(GAP_MAX + 10, g.gap + 10); g.rushMsg = 1.8; g.rushMsgText = 'RUSH CLEAR!'; sfx.coffee(); }
+  g.rush = null; g.nextRush += RUSH_EVERY; g.nextObs = Math.max(g.nextObs, g.dist + 120);
 }
 function update(dt) {
   g.t += dt;
@@ -966,7 +990,6 @@ function update(dt) {
   if (g.boostPop > 0) g.boostPop -= dt;
   const dx = g.speed * (g.boost > 0 ? BOOST_MUL : 1) * dt;
   g.dist += dx; g.scroll += dx;
-  if (g.combo >= COMBO_STEP) g.bonus += dx / DIST_PER_PT * (mult() - 1);
   if (g.comboPop > 0) g.comboPop -= dt;
   { const ns = stageOf(score());
     if (ns > g.stage && stageReady(ns)) { g.prevStage = g.stage; g.stage = ns; g.stageFade = 0; g.stageMsg = 3; sfx.coffee(); }
@@ -975,16 +998,28 @@ function update(dt) {
   if (g.rushMsg > 0) g.rushMsg -= dt;
   updateRush(dt);
   if (g.swing > 0) g.swing -= dt;
+  if (g.shield > 0) g.shield -= dt;
+  for (const q of g.sheets) { q.x -= q.vx * dt; q.y += q.vy * dt; q.rot += q.vr * dt; }
+  g.sheets = g.sheets.filter(q => q.x > -40);
+  if (g.storm) {  // 종이 폭풍: 에너지 드링크 직후 3줄 높이로 종이가 빠르게 쏟아짐 → 보호막 없이는 못 피함
+    g.storm.t -= dt; g.storm.acc -= dt;
+    if (g.storm.acc <= 0) {
+      g.obs.push({ type: 'papers', x: W + 12 + rnd(0, 24), y: GROUND - 14 - [0, 20, 40, 60][Math.floor(Math.random() * 4)] - rnd(0, 6), w: 12, h: 15, storm: true, passed: true, rot0: rnd(0, 6), spin: rnd(-9, 9), c: Math.random() < 0.3 ? '#ffe9a8' : '#f7f1e3' });
+      g.storm.acc = 0.065;
+    }
+    if (Math.random() < 0.45) g.sheets.push({ x: W + 20, y: rnd(10, GROUND - 10), vx: rnd(380, 620), vy: rnd(-30, 50), w: rnd(12, 24), h: rnd(16, 30), rot: rnd(0, 6), vr: rnd(-8, 8), c: Math.random() < 0.3 ? '#ffe9a8' : '#f7f1e3' });
+    if (g.storm.t <= 0) { g.storm = null; g.nextObs = Math.max(g.nextObs, g.dist + 120); }
+  }
   if (g.swing > 0 || g.fever > 0) g.swingT += dt;  // 피버 중에도 악기를 휘두름
   if (g.fever > 0) {  // 피버: 거리 점수 2배, 마감을 밀어냄
-    g.fever -= dt; g.bonus += dx / DIST_PER_PT * mult(); g.gap = Math.min(GAP_MAX + 10, g.gap + 8 * dt);
+    g.fever -= dt; g.gap = Math.min(GAP_MAX + 10, g.gap + 8 * dt);
     if (Math.random() < 0.5) g.parts.push({ x: PX + rnd(0, 16), y: p.y - rnd(0, 24), vx: rnd(-80, -30), vy: rnd(-40, 10), life: 0.4, c: Math.random() < 0.5 ? '#ffd23f' : '#ff3b6b', s: 1 });
   }
 
   stepPlayer(dt, g.speed * (g.boost > 0 ? BOOST_MUL : 1));
 
   // 스폰
-  if (g.dist >= g.nextObs) spawnObstacle();
+  if (g.dist >= g.nextObs && !g.rush && !g.storm && g.t < g.nextRush - 2.6) spawnObstacle();
 
   // 장애물
   const pb = playerBox();
@@ -992,43 +1027,45 @@ function update(dt) {
   for (const o of g.obs) {
     o.x -= dx;
     const late = Math.min(60, Math.max(0, g.t - 60) * 1.2);
+    if (o.storm) o.x -= STORM_EXTRA * dt;
     if (o.type === 'pen') o.x -= (PEN_EXTRA + late) * dt;
     if (o.type === 'chair') { o.x -= (CHAIR_EXTRA + late / 2) * dt; o.roll = (o.roll || 0) + dt; }
     if (o.type === 'mail') o.y = o.base + Math.round(Math.sin(g.t * 5 + o.ph) * 2);
     if (sb && !o.hit) {  // 악기 휘두르기: 닿는 장애물 파괴 +50
-      const hb = hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y);
+      const hb = o.storm ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y);
       if (overlap(sb, hb)) {
-        o.hit = true; o.x = -999; pts(SWING_PTS); addCombo(); sfx.hit(); g.shake = 0.1;
+        o.hit = true; o.x = -999; addCombo(); sfx.hit(); g.shake = 0.1;
         burst(hb.x + hb.w / 2, hb.y + hb.h / 2, 18, ['#ffffff', '#b9b3d6', '#ffd23f'], 150);
         continue;
       }
     }
-    if (!o.hit && (p.inv <= 0 || g.fever > 0)) {
-      const hb = ART.ok ? hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y) : { x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 3 };
+    if (!o.hit && (p.inv <= 0 || g.fever > 0) && g.shield <= 0) {
+      const hb = o.storm ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : ART.ok ? hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y) : { x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 3 };
       if (overlap(pb, hb) && g.fever > 0) {  // 피버 중엔 장애물을 부숨
-        o.hit = true; o.x = -999; pts(10); addCombo(); sfx.note();
+        o.hit = true; o.x = -999; addCombo(); sfx.note();
         burst(PX + 16, pb.y + 8, 16, ['#ffd23f', '#ff3b6b', '#ffffff'], 140);
       } else if (overlap(pb, hb)) {
-        o.hit = true; p.inv = 1.1; g.gap -= HIT_COST; if (g.combo >= COMBO_STEP) { g.rushMsg = 0.8; g.rushMsgText = 'COMBO BREAK'; } g.combo = 0; g.shake = 0.25; g.hits++;
+        o.hit = true; p.inv = 1.1; g.gap -= o.storm ? GAP_MAX : HIT_COST;  // 종이 폭풍은 보호막 없이 맞으면 즉사 if (g.combo >= COMBO_STEP) { g.rushMsg = 0.8; g.rushMsgText = 'COMBO BREAK'; } g.combo = 0; g.nextCombo = 10; g.shake = 0.25; g.hits++;
         sfx.hit(); burst(o.x + o.w / 2, o.y + o.h / 2, 14, ['#f7f1e3', '#e63946', '#ffd23f'], 110);
       }
     }
   }
-  for (const o of g.obs) if (!o.hit && !o.passed && o.x + o.w < PX) { o.passed = true; addCombo(); pts(1); }  // 무사히 넘김
+  for (const o of g.obs) if (!o.hit && !o.passed && o.x + o.w < PX) { o.passed = true; addCombo(); }  // 무사히 넘김
   g.obs = g.obs.filter(o => o.x > -40);
 
   // 아이템
   for (const it of g.items) {
     it.x -= dx;
     if (it.taken) continue;
-    const ib = ART.ok ? hbox(it.type, it.x, it.y) : (it.type === 'note' ? { x: it.x, y: it.y, w: 8, h: 10 } : { x: it.x, y: it.y, w: 12, h: 12 });
-    if (overlap({ x: pb.x - 2, y: pb.y - 2, w: pb.w + 4, h: pb.h + 4 }, ib)) {
+    const ib = it.type === 'energy' ? { x: it.x, y: it.y, w: 10, h: 14 } : ART.ok ? hbox(it.type, it.x, it.y) : (it.type === 'note' ? { x: it.x, y: it.y, w: 8, h: 10 } : { x: it.x, y: it.y, w: 12, h: 12 });
+    if (overlap({ x: pb.x - 2, y: pb.y - 2, w: pb.w + 4, h: pb.h + 4 }, ib) && (it.type !== 'energy' || p.air3)) {  // 에너지 드링크는 3단 점프 중에만 먹을 수 있음
       it.taken = true;
       if (it.type === 'note') {
-        pts(NOTE_PTS); addCombo(); sfx.note(); burst(it.x + 4, it.y + 4, 5, ['#ffd23f'], 50);
-        if (g.fever <= 0 && ++g.notes >= FEVER_NOTES) { g.notes = 0; g.fever = FEVER_TIME; sfx.coffee(); g.shake = 0.15; }
+        addCombo(); sfx.note(); burst(it.x + 4, it.y + 4, 5, ['#ffd23f'], 50);
+        if (g.fever <= 0 && ++g.notes >= FEVER_NOTES) { g.notes = 0; g.fever = FEVER_TIME; bigFx('FEVER!', '1,2,3, 튀어!', '#ff3d7f', 2.0); sfx.coffee(); g.shake = 0.15; }
       }
-      else if (it.type === 'beer') { g.swing = SWING_TIME; g.swingT = 0; sfx.coffee(); g.shake = 0.12; burst(it.x + 6, it.y + 5, 16, ['#ffd23f', '#ffffff', '#f2a93b'], 100); }
+      else if (it.type === 'energy') { g.shield = SHIELD_TIME; bigFx('POWER UP!', '보호막 ON! 곧 종이 폭풍이 온다', '#7df9ff', 1.6); sfx.coffee(); g.shake = 0.1; burst(it.x + 5, it.y + 6, 16, ['#7df9ff', '#ffffff', '#ffd23f'], 110); }
+      else if (it.type === 'beer') { g.swing = SWING_TIME; g.swingT = 0; bigFx('ROCK!!', '음악의 힘으로 다 때려부수자!', '#ffd23f', 2.0); sfx.coffee(); g.shake = 0.12; burst(it.x + 6, it.y + 5, 16, ['#ffd23f', '#ffffff', '#f2a93b'], 100); }
       else if (it.type === 'americano') { g.boost = BOOST_TIME; g.boostPop = 1.2; sfx.coffee(); burst(it.x + 6, it.y + 6, 12, ['#6b3f22', '#f7f1e3', '#9ad7ff'], 80); }
     }
   }
@@ -1110,12 +1147,16 @@ function stepPlayer(dt, speed) {
     p.vy = DJUMP_V; p.air2 = true; p.buf = 0; sfx.jump();
     burst(PX + 6, p.y, 6, ['#f7f1e3', '#ffd23f'], 40);
   }
+  else if (p.press && !p.ground && p.air2 && !p.air3) {  // 3단 점프 (평소에도 가능, 에너지 드링크는 이걸로만 먹을 수 있음)
+    p.vy = DJUMP3_V; p.air3 = true; p.buf = 0; sfx.jump();
+    burst(PX + 6, p.y, 8, ['#7df9ff', '#ffffff'], 50);
+  }
   p.press = false;
   if (!p.ground) {
     const extra = p.vy < 0 && !p.holdJump ? 2.4 : 1;
     p.vy += GRAV * extra * dt; p.y += p.vy * dt;
     if (p.y >= GROUND) {
-      p.y = GROUND; p.vy = 0; p.ground = true; p.air2 = false;
+      p.y = GROUND; p.vy = 0; p.ground = true; p.air2 = false; p.air3 = false;
       if (p.slideHeld) { p.slide = 0.5; sfx.slide(); }
     }
   }
@@ -1225,27 +1266,57 @@ function drawSky(u) {
 }
 // 배경 간판 (bg_near 의 x250~317, y78~99 빨간 판): 불과사이 ↔ BULGWASAI 번갈아
 const SIGN = { x: 250, y: 78, w: 68, h: 22, words: ['불과사이', 'BULGWASAI', '마감펑크', '11.20 발매'], every: 2.2 };
+// LED 전광판: 글자를 점(도트)으로 찍어 켜진 점/꺼진 점이 보이게 그림
+const LED = { cache: {}, cols: 64, rows: 18 };
+function ledPanel(word) {
+  if (LED.cache[word]) return LED.cache[word];
+  const m = document.createElement('canvas'); m.width = LED.cols; m.height = LED.rows;
+  const mx = m.getContext('2d'); mx.font = '11px ' + KFONT; mx.textBaseline = 'middle'; mx.textAlign = 'center'; mx.fillStyle = '#fff';
+  mx.fillText(word, LED.cols / 2, LED.rows / 2 + 1);
+  mx.imageSmoothingEnabled = false;
+  const d = mx.getImageData(0, 0, LED.cols, LED.rows).data;
+  const p = document.createElement('canvas'); p.width = LED.cols * 2; p.height = LED.rows * 2;
+  const c = p.getContext('2d'); c.fillStyle = '#1d0710'; c.fillRect(0, 0, p.width, p.height);
+  for (let j = 0; j < LED.rows; j++) for (let i = 0; i < LED.cols; i++) {
+    const on = d[(j * LED.cols + i) * 4 + 3] > 120;
+    if (!on) { c.fillStyle = '#35101c'; c.fillRect(i * 2, j * 2, 1, 1); }
+  }
+  for (let j = 0; j < LED.rows; j++) for (let i = 0; i < LED.cols; i++) {  // 글자 가장자리(약한 알파)는 어둡게 → 가늘고 또렷하게
+    const a = d[(j * LED.cols + i) * 4 + 3] / 255; if (a < .45) continue;
+    c.globalAlpha = Math.min(1, (a - .2) * 1.5);
+    c.shadowColor = '#ff7a3d'; c.shadowBlur = 3; c.fillStyle = '#ff9a4d'; c.fillRect(i * 2 + .1, j * 2 + .1, 1.3, 1.3);
+    c.shadowBlur = 0; c.fillStyle = '#ffe2b0'; c.fillRect(i * 2 + .4, j * 2 + .4, .6, .6);
+  }
+  c.globalAlpha = 1;
+  if (document.fonts && document.fonts.check('11px ' + KFONT)) LED.cache[word] = p;
+  return p;
+}
+function drawLED(c, sx, sy, t) {  // (sx, sy) = 판 왼쪽 위, 68x22
+  const ph = t % SIGN.every, word = SIGN.words[Math.floor(t / SIGN.every) % SIGN.words.length];
+  c.fillStyle = '#1d0710'; c.fillRect(sx + 2, sy + 2, SIGN.w - 4, SIGN.h - 4);
+  if (ph < 0.12 || (ph > SIGN.every - 0.08)) return;  // 글자가 바뀔 때 잠깐 꺼짐
+  const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
+  c.globalAlpha = 0.93 + 0.07 * Math.sin(t * 40);
+  c.drawImage(ledPanel(word), sx + 2, sy + 2, LED.cols, LED.rows);
+  c.globalAlpha = 1; c.imageSmoothingEnabled = sm;
+}
 function drawSign(t, c = ctx) {
   const img = ART.img.near, o = Math.floor(g.scroll * 0.4) % img.width;
-  const word = SIGN.words[Math.floor(t / SIGN.every) % SIGN.words.length];
   for (const base of [-o, img.width - o]) {
     const sx = base + SIGN.x;
     if (sx + SIGN.w < 0 || sx > W) continue;
     c.fillStyle = '#ff3b6b'; c.fillRect(sx, SIGN.y, SIGN.w, SIGN.h);
-    c.font = '12px ' + KFONT; c.textBaseline = 'top'; c.textAlign = 'center';
-    c.fillStyle = '#f7f1e3'; c.fillText(word, sx + SIGN.w / 2, SIGN.y + 5); c.textAlign = 'left';
+    drawLED(c, sx, SIGN.y, t);
   }
 }
 const STAGE_SIGN = { 1: [106, 1106], 2: [66, 1146], 3: [44, 1168] };  // 단계 near 이미지에 그려진 전광판 x (y78, 68x22)
 function drawStageSign(c, st, t) {
   const xs = STAGE_SIGN[st], img = ART.img[`s${st}_near`]; if (!xs || !img) return;
-  const o = Math.floor(g.scroll * 0.4) % img.width, word = SIGN.words[Math.floor(t / SIGN.every) % SIGN.words.length];
-  c.font = '12px ' + KFONT; c.textBaseline = 'top'; c.textAlign = 'center'; c.fillStyle = '#f7f1e3';
+  const o = Math.floor(g.scroll * 0.4) % img.width;
   for (const base of [-o, img.width - o]) for (const x of xs) {
     const sx = base + x; if (sx + SIGN.w < 0 || sx > W) continue;
-    c.fillText(word, sx + SIGN.w / 2, SIGN.y + 5);
+    drawLED(c, sx, SIGN.y, t);
   }
-  c.textAlign = 'left';
 }
 function drawStageImgs(c, st, t = 0) {  // 이미지 한 벌(sky/far/near/ground)을 그대로 그림
   const I = ART.img, tl = (img, f) => { const o = Math.floor(g.scroll * f) % img.width; c.drawImage(img, -o, 0); c.drawImage(img, img.width - o, 0); };
@@ -1304,8 +1375,32 @@ function drawCityBG(t) {
   ctx.fillStyle = '#3b2c55';
   for (let x = -off; x < W; x += 24) { ctx.fillRect(x, GROUND + 6, 12, 2); ctx.fillRect(x + 12, GROUND + 14, 8, 1); }
 }
+function drawSheet(cx, cy, w, h, rot, col) {  // 날아다니는 종이 한 장
+  ctx.save(); ctx.translate(Math.round(cx), Math.round(cy)); ctx.rotate(rot);
+  const sq = 0.35 + 0.65 * Math.abs(Math.cos(rot * 1.7));  // 팔랑이는 느낌: 가로 폭이 줄었다 늘었다
+  ctx.scale(sq, 1);
+  ctx.fillStyle = '#1a1423'; ctx.fillRect(-w / 2 - 1, -h / 2 - 1, w + 2, h + 2);
+  ctx.fillStyle = col; ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.fillStyle = 'rgba(60,60,90,.35)';
+  for (let yy = -h / 2 + 3; yy < h / 2 - 1; yy += 3) ctx.fillRect(-w / 2 + 2, yy, w - 4, 1);
+  ctx.restore();
+}
+function drawWind() {  // 종이 폭풍: 파란 바람줄기가 오른쪽에서 몰아침
+  const on = g.storm || g.obs.some(o => o.storm);
+  if (!on) return;
+  ctx.fillStyle = 'rgba(120,190,255,.07)'; ctx.fillRect(0, 0, W, GROUND);
+  for (let i = 0; i < 16; i++) {
+    const sp = 380 + (i % 5) * 90, len = 26 + (i * 13) % 46, y = 18 + ((i * 37) % 120) + Math.sin(g.t * 3 + i) * 5;
+    const x = W - ((g.t * sp + i * 71) % (W + len + 40)) + 20;
+    ctx.globalAlpha = 0.8; ctx.fillStyle = i % 3 ? '#8fd0ff' : '#e8f6ff';
+    ctx.fillRect(Math.round(x), Math.round(y), len, i % 3 ? 1 : 2); ctx.fillRect(Math.round(x) + 6, Math.round(y) + 1, Math.round(len * 0.6), 1);
+  }
+  ctx.globalAlpha = 1;
+  for (const q of g.sheets) drawSheet(q.x, q.y, q.w, q.h, q.rot, q.c);  // 화면 앞쪽을 스쳐 가는 큰 종이(판정 없음)
+}
 function drawObstacle(o) {
   const x = Math.round(o.x), y = Math.round(o.y);
+  if (o.storm) { drawSheet(o.x + o.w / 2, o.y + o.h / 2, o.w, o.h, o.rot0 + g.t * o.spin, o.c); return; }
   if (ART.ok) {
     if (o.type === 'papers') spr('paper', x, y);
     else if (o.type === 'chair') spr('chair', x, y + (Math.floor((o.roll || 0) * 14) % 2));  // 덜컹덜컹 굴러옴
@@ -1338,8 +1433,26 @@ function drawObstacle(o) {
     ctx.fillStyle = '#9aa0b5'; for (let i = 0; i < 3; i++) ctx.fillRect(x + 3, y + 19 + i * 3, 10, 1);
   }
 }
+function drawEnergy(x, y) {  // 마감 러시 전용 에너지 드링크 (도트로 직접 그림)
+  x = Math.round(x); y = Math.round(y);
+  if (Math.floor(g.t * 8) % 2) { ctx.fillStyle = 'rgba(125,249,255,.35)'; ctx.fillRect(x - 2, y - 2, 14, 18); }
+  ctx.fillStyle = '#1a1423'; ctx.fillRect(x, y + 1, 10, 14); ctx.fillRect(x + 1, y, 8, 1);
+  ctx.fillStyle = '#2bc7e6'; ctx.fillRect(x + 1, y + 2, 8, 12);
+  ctx.fillStyle = '#9ff3ff'; ctx.fillRect(x + 1, y + 2, 2, 12);
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(x + 4, y + 4, 3, 2); ctx.fillRect(x + 3, y + 6, 3, 2); ctx.fillRect(x + 5, y + 8, 2, 3);  // 번개
+  ctx.fillStyle = '#d9d4ec'; ctx.fillRect(x + 1, y + 1, 8, 1); ctx.fillRect(x + 3, y - 1, 4, 1);
+}
+function drawShield() {
+  if (g.shield <= 0) return;
+  if (g.shield < 1 && Math.floor(g.t * 12) % 2) return;
+  const cx = PX + 10, cy = Math.round(p.y) - 12, r = 15 + Math.sin(g.t * 10);
+  ctx.strokeStyle = '#7df9ff'; ctx.globalAlpha = 0.85; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 0.18; ctx.fillStyle = '#7df9ff'; ctx.fill(); ctx.globalAlpha = 1;
+}
 function drawItem(it) {
   const bob = Math.round(Math.sin(g.t * 6 + it.ph) * 1.5);
+  if (it.type === 'energy') { drawEnergy(it.x, it.y + bob); return; }
   if (ART.ok) {
     spr(it.type, it.x, it.y + bob);
     if (it.type !== 'note' && Math.floor(g.t * 6) % 2) { ctx.fillStyle = '#ffd23f'; ctx.fillRect(Math.round(it.x) - 2, Math.round(it.y) + bob - 2, 2, 2); ctx.fillRect(Math.round(it.x) + 12, Math.round(it.y) + bob + 11, 2, 2); }
@@ -1614,12 +1727,22 @@ function drawOpening(ot, t) {
 }
 
 let hudLast = -1;
+function drawBigFx(dt) {
+  const f = g.fx; if (!f) return;
+  f.t += dt; if (f.t >= f.dur) { g.fx = null; return; }
+  const k = f.t / f.dur, pop = Math.max(0, 1 - f.t / 0.22);
+  const size = Math.round(30 * (1 + 0.6 * pop)), a = Math.min(1, (f.dur - f.t) / 0.4);
+  ctx.globalAlpha = a * 0.28; ctx.fillStyle = f.color; ctx.fillRect(0, 62, W, 34); ctx.globalAlpha = 1;
+  ctx.globalAlpha = a;
+  ktextOutlined(f.text, W / 2 + (pop > 0 ? Math.sin(f.t * 90) * 2 * pop : 0), 70, f.color, size, '#1a1423');
+  ktextOutlined(f.sub, W / 2, 104, '#f7f1e3', 10, '#1a1423');
+  ctx.globalAlpha = 1;
+}
 function drawCombo() {
-  const m = mult();
+  drawBigFx(Math.max(0, Math.min(1 / 30, (performance.now() - (drawCombo.last || performance.now())) / 1000))); drawCombo.last = performance.now();
   if (g.combo >= 3) {  // 왼쪽 위 기록 아래
     const pop = g.comboPop > 0 ? 1 + g.comboPop * 0.6 : 1;
-    ktextOutlined(`${g.combo} COMBO`, 6, 30, m >= 3 ? '#ff3d7f' : '#ffd23f', Math.round(12 * pop), '#1a1423', 'left');
-    if (m > 1) ktextOutlined(`거리 ×${m}`, 6, 43, '#f7f1e3', 10, '#1a1423', 'left');
+    ktextOutlined(`${g.combo} COMBO`, 6, 30, g.combo >= 50 ? '#ff3d7f' : '#ffd23f', Math.round(12 * pop), '#1a1423', 'left');
   }
   if (g.rush) {  // 마감 러시: 경고 깜빡임 + 붉은 테두리
     const warn = g.rush.phase === 'warn', blink = Math.floor(g.t * 8) % 2;
@@ -1627,6 +1750,7 @@ function drawCombo() {
     ctx.fillRect(0, 0, W, 4); ctx.fillRect(0, GROUND - 3, W, 3);
     ctx.globalAlpha = 1;
     ktextOutlined(warn ? '! 마감 러시 !' : '마감 러시!  ' + Math.ceil(g.rush.t), W / 2, 52, blink ? '#ff6b6b' : '#ffd23f', warn ? 18 : 12, '#1a1423');
+    if (warn && g.shield <= 0) ktextOutlined('점프 ×3 으로 에너지 드링크를 먹어라!', W / 2, 74, '#7df9ff', 10, '#1a1423');
   } else if (g.rushMsg > 0) {
     ctx.globalAlpha = Math.min(1, g.rushMsg / 0.4);
     ktextOutlined(g.rushMsgText, W / 2, 52, g.rushMsgText.startsWith('COMBO BREAK') ? '#a99cc8' : '#ffd23f', 14, '#1a1423');
@@ -1699,7 +1823,9 @@ function render(t) {
   let edge = ART.ok ? 44 + (1 - Math.max(0, g.gap) / GAP_MAX) * (PX - 38) : PX - g.gap;
   if (state === 'dying' || state === 'over') edge = ART.ok ? PX + 6 + Math.min(1, g.dieT / 0.5) * 14 : PX + 8 + Math.min(1, g.dieT / 0.5) * 30;
   if (state !== 'over' || g.dieT < 0.5) drawPlayer(t);
+  drawShield();
   drawParts();
+  drawWind();
   drawDeadline(edge, t, g.gap / GAP_MAX < 0.4 || state === 'dying' || state === 'over');
   ctx.restore();
   if (!pre) drawHUD();
@@ -1737,7 +1863,42 @@ requestAnimationFrame(frame);
 
 // 디버그/테스트용 훅
 window.runFrameDbg = () => runFrame(runClock);
-window.__seek = t => { if (bgmFailed) fakeT = t; else bgmEl.currentTime = t; }; window.__songTime = () => songTime();
+// 테스트용 단계 점프 바 (?debug 또는 window.MAGAM_DEBUG 일 때만 보임)
+if (window.MAGAM_DEBUG || /[?&]debug/.test(location.search)) {
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:8px;background:rgba(10,6,18,.9);font:13px/1.2 Mulmaru,sans-serif;color:#f7f1e3';
+  bar.innerHTML = '<span id="dbgMsg" style="align-self:center">TEST · 게임 시작 후 눌러요 →</span>';
+  const names = ['도시 0m', '교외 1km', '사막 1.5km', '버섯숲 3km'];
+  STAGES.forEach((st, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = names[i] || st.name;
+    b.style.cssText = 'padding:8px 12px;border:2px solid #f7f1e3;background:#2a1b3d;color:#f7f1e3;font:inherit;border-radius:6px';
+    b.addEventListener('click', e => { e.currentTarget.blur(); if (state !== 'play') { $('dbgMsg').textContent = '먼저 게임을 시작해 주세요 (캐릭터 선택 후)'; return; } g.dist = st.from * DIST_PER_PT + 1; g.obs.length = 0; $('dbgMsg').textContent = names[i] + ' 으로 이동 (무적)'; });
+    bar.append(b);
+  });
+  const act = (label, fn) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+    b.style.cssText = 'padding:8px 12px;border:2px solid #ffd23f;background:#3b2c55;color:#ffd23f;font:inherit;border-radius:6px';
+    b.addEventListener('click', e => { e.currentTarget.blur(); if (state !== 'play') { $('dbgMsg').textContent = '먼저 게임을 시작해 주세요 (캐릭터 선택 후)'; return; } fn(); $('dbgMsg').textContent = label; });
+    bar.append(b);
+  };
+  const X = W + 12;
+  act('콤보 이벤트', () => { g.combo = Math.max(g.combo, g.nextCombo - 1); addCombo(); });
+  act('FEVER', () => { g.fever = FEVER_TIME; g.notes = 0; bigFx('FEVER!', '1,2,3, 튀어!', '#ff3d7f', 2.0); sfx.coffee(); g.shake = 0.15; });
+  act('ROCK', () => { g.swing = SWING_TIME; g.swingT = 0; bigFx('ROCK!!', '음악의 힘으로 다 때려부수자!', '#ffd23f', 2.0); sfx.coffee(); g.shake = 0.12; });
+  act('BOOST', () => { g.boost = BOOST_TIME; g.boostPop = 1.2; sfx.coffee(); });
+  act('마감 러시', () => { g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits, drop: 0.5, n: 0 }; sfx.hit(); });
+  act('후반 난이도(70초)', () => { g.t = Math.max(g.t, 70); g.speed = MAX_SPEED; });
+  act('종이 폭풍', () => { g.storm = { t: STORM_TIME, acc: 0 }; });
+  act('에너지 드링크', () => g.items.push({ type: 'energy', x: X, y: GROUND - DRINK_Y - 86, ph: 0 }));
+  act('의자', () => g.obs.push({ type: 'chair', x: X, y: GROUND - 18, w: 16, h: 18 }));
+  act('빨간 펜', () => g.obs.push({ type: 'pen', x: X, y: GROUND - 23, w: 22, h: 7 }));
+  act('책더미', () => g.obs.push({ type: 'books', x: X, y: GROUND - 60, w: 22, h: 60 }));
+  act('아아', () => g.items.push({ type: 'americano', x: X, y: GROUND - 20, ph: 0 }));
+  act('맥주', () => g.items.push({ type: 'beer', x: X, y: GROUND - 20, ph: 0 }));
+  document.body.append(bar);
+  setInterval(() => { if (state === 'play') { g.gap = GAP_MAX; p.inv = 99; } }, 100);  // 무적: 테스트용
+}
+window.__led = w => ledPanel(w); window.__sign = SIGN; window.__seek = t => { if (bgmFailed) fakeT = t; else bgmEl.currentTime = t; }; window.__songTime = () => songTime();
 window.__magam = { get state() { return state; }, get score() { return score(); }, get g() { return g; }, get p() { return p; }, startGame };
 send({ type: 'magam:ready' });
 })();

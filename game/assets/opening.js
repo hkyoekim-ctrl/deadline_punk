@@ -55,7 +55,7 @@
     if (tcv.width < w || tcv.height < h) { tcv.width = Math.max(tcv.width, w); tcv.height = Math.max(tcv.height, h); }
     t.clearRect(0, 0, tcv.width, tcv.height); t.font = size + 'px ' + FONT; t.textBaseline = 'top'; t.fillStyle = '#000'; t.fillText(str, 2, 2);
     const d = t.getImageData(0, 0, w, h).data;
-    const ox = Math.round(align === 'center' ? x - w / 2 : align === 'right' ? x - w : x) - 2, oy = Math.round(y) - 2;
+    const ox = Math.round(align === 'center' ? x - (w - 4) / 2 : align === 'right' ? x - w : x) - 2, oy = Math.round(y) - 2;
     const pts = []; for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) if (d[(yy * w + xx) * 4 + 3] > 110) pts.push(xx, yy);
     if (shadow) { c.fillStyle = shadow; for (let i = 0; i < pts.length; i += 2) c.fillRect(ox + pts[i] + 1, oy + pts[i + 1] + 1, 1, 1); }
     c.fillStyle = col; for (let i = 0; i < pts.length; i += 2) c.fillRect(ox + pts[i], oy + pts[i + 1], 1, 1);
@@ -199,10 +199,6 @@
     for (const o of [-3, -1, 1, 3]) px(cx + o, by + 8, 1, 1, '#cfe0ff');
     // 이름은 글자로(draw 에서), 아래는 점 3개(수신 중) 또는 타이머
     if (state === 'ring') { for (let i = 0; i < 3; i++) if (i <= Math.floor(t * 3) % 3) px(cx - 4 + i * 3, by + 26, 2, 2, '#9db7e8'); }
-    else {
-      const s = Math.max(0, Math.floor(ot - cue.ringEnd)), str = '00:' + String(s % 60).padStart(2, '0'), col = state === 'shout' ? '#ff8aa0' : '#2ecc71';
-      digits(str, Math.round(cx - digW(str) / 2), by + 25, col);
-    }
     if (state === 'ring') {
       const o = Math.floor(t * 10) % 2 * 2;
       for (let i = 0; i < 2; i++) { px(bx - 4 - i * 3 - o, by + 12 - i * 2, 1, 10 + i * 4, '#ffd23f'); px(bx + 29 + i * 3 + o, by + 12 - i * 2, 1, 10 + i * 4, '#ffd23f'); }
@@ -400,6 +396,7 @@
     ctx.drawImage(gcv, sx * 2, sy * 2, SW, SH);
     c = ctx;
     ptext('편집자', (ph.cx + sx) * 2, (ph.nameY + sy) * 2 + 2, 12, '#ffffff', 'center');
+    if (state !== 'ring') ptext('통화 중', (ph.cx + sx) * 2, (ph.nameY + sy) * 2 + 22, 11, state === 'shout' ? '#ff8aa0' : '#2ecc71', 'center');
     let cur = null; for (const l of L) if (ot >= l[0]) cur = l;
     const nextStart = cur ? (L[L.indexOf(cur) + 1] || [cue.drop])[0] : 0;
     if (cur && ot < nextStart) bubble(ot, t, cur, cur[2] === '작가님' || cur[2] === '계세요?');
