@@ -225,7 +225,29 @@
   }
 
   // ── 리더보드 ──────────────────────────────────
-  const store = MPLeaderboard.create(C.leaderboard);
+  let store = MPLeaderboard.create(C.leaderboard);
+  // 미리보기(MP_PREVIEW)에서만: 브라우저 저장소 대신 메모리에 샘플 기록 35건을 두고 순위표·전광판을 확인합니다. 실제 사이트에는 들어가지 않아요.
+  if (window.MP_PREVIEW) {
+    const names = ["마감요정", "원고도망자", "새벽세시", "펑크난밤", "커피수혈", "야근러", "탈고직전", "빨간펜", "교정지", "편집장님죄송"];
+    const msgs = ["마감은 지켜지지 않는다", "원고는 내일 보내겠습니다", "달려라 마감!", "", "오늘도 펑크", "책을 찢고 춤을 추자!", "커피 한 잔만 더", "", "탈고는 전설이다", "살려주세요"];
+    const parts = ["vocal", "guitar", "bass", "keys", "drums"];
+    const mem = Array.from({ length: 35 }, (_, i) => ({
+      name: names[i % 10] + (i >= 10 ? i : ""), message: msgs[i % 10], score: 14000 - i * 330, distance: 14000 - i * 330,
+      character: parts[i % 5], created_at: new Date(Date.now() - i * 6e5).toISOString()
+    }));
+    const byScore = () => mem.slice().sort((a, b) => b.score - a.score);
+    store = {
+      kind: "local",
+      async top() { return byScore(); },
+      async recent(n) { return mem.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, n); },
+      async ahead(score) { return mem.filter((r) => r.score > score).length; },
+      async submit(row) {
+        const saved = { ...row, created_at: new Date().toISOString() };
+        mem.push(saved);
+        return { rank: byScore().indexOf(saved) + 1 };
+      }
+    };
+  }
   const MY_KEY = "magampunk.mine";
   let mine = null;
   try { mine = JSON.parse(sessionStorage.getItem(MY_KEY)); } catch { /* 없음 */ }
@@ -283,7 +305,7 @@
     );
   }
 
-  let boardOpen = false;
+  let boardPage = 0, jumpToMine = false;
   async function renderBoard() {
     const board = $("#board");
     let rows;
@@ -301,10 +323,18 @@
       return;
     }
     const tbody = el("tbody");
-    const SHOW = 10;
-    rows.forEach((r, i) => {
+    const PER = 10;
+    const pages = Math.ceil(rows.length / PER);
+    if (jumpToMine) {
+      const at = rows.findIndex((r) => mine && r.name === mine.name && r.score === mine.score && r.created_at === mine.created_at);
+      if (at >= 0) boardPage = Math.floor(at / PER);
+      jumpToMine = false;
+    }
+    boardPage = Math.min(boardPage, pages - 1);
+    rows.slice(boardPage * PER, boardPage * PER + PER).forEach((r, k) => {
+      const i = boardPage * PER + k;
       const isMine = mine && r.name === mine.name && r.score === mine.score && r.created_at === mine.created_at;
-      const cls = [i < 3 ? `top${i + 1}` : "", isMine ? "mine" : "", i >= SHOW ? "more" : ""].join(" ").trim() || null;
+      const cls = [i === 0 ? "tier1" : i < 10 ? "tier2" : i < 20 ? "tier3" : i < 30 ? "tier4" : "", isMine ? "mine" : ""].join(" ").trim() || null;
       tbody.append(el("tr", { class: cls },
         el("td", { class: "rank" }, String(i + 1).padStart(2, "0")),
         el("td", { class: "name" }, r.name),
@@ -317,13 +347,24 @@
       el("thead", {}, el("tr", {},
         el("th", {}, "#"), el("th", {}, "NAME"), el("th", { class: "char" }, "PART"), el("th", {}, "MESSAGE"), el("th", { class: "num" }, "DISTANCE"))),
       tbody));
-    if (rows.length > SHOW) {
-      const wrap = $("#board");
-      wrap.classList.toggle("open", boardOpen);
-      const btn = el("button", { class: "board-more", type: "button", "aria-expanded": String(boardOpen) },
-        boardOpen ? "▲ 접기" : `▼ ${SHOW + 1}위 이후 ${rows.length - SHOW}명 더 보기`);
-      btn.addEventListener("click", () => { boardOpen = !boardOpen; renderBoard(); });
-      wrap.append(btn);
+    if (pages > 1) {
+      const go = (n) => { boardPage = n; renderBoard(); };
+      const pager = el("nav", { class: "board-pager", "aria-label": "순위 페이지" });
+      const step = (label, n, off) => {
+        const b = el("button", { type: "button", class: "pg-step", "aria-label": label === "◀" ? "이전 10명" : "다음 10명" }, label);
+        if (off) b.disabled = true; else b.addEventListener("click", () => go(n));
+        return b;
+      };
+      pager.append(step("◀", boardPage - 1, boardPage === 0));
+      for (let n = 0; n < pages; n++) {
+        const b = el("button", { type: "button", class: "pg" + (n === boardPage ? " on" : ""), "aria-current": n === boardPage ? "page" : null },
+          String(n + 1));
+        b.title = `${n * PER + 1}~${Math.min(rows.length, n * PER + PER)}위`;
+        b.addEventListener("click", () => go(n));
+        pager.append(b);
+      }
+      pager.append(step("▶", boardPage + 1, boardPage === pages - 1));
+      board.append(pager, el("p", { class: "board-range" }, `${boardPage * PER + 1}~${Math.min(rows.length, boardPage * PER + PER)}위`));
     }
   }
   $("#board-refresh").addEventListener("click", (e) => {
@@ -345,6 +386,7 @@
       const hit = rows.find((r) => r.name === row.name && r.score === row.score);
       if (hit) mine.created_at = hit.created_at;
       try { sessionStorage.setItem(MY_KEY, JSON.stringify(mine)); } catch { /* 무시 */ }
+      jumpToMine = true;
       await renderBoard();
       toast(rank ? `${rank}위로 기록했어요!` : "기록했어요!");
       return { ok: true, rank };

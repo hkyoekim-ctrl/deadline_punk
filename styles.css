@@ -611,12 +611,6 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 @keyframes led-b { 0%, 42% { opacity: 0; } 50%, 92% { opacity: 1; } 100% { opacity: 0; } }
 .led-msg { font-size: clamp(16px, 2.6vw, 21px); line-height: 1.35; color: #ffe9a8; overflow-wrap: anywhere; text-align: center; }
 
-/* 순위표: 10위까지 기본, 이후 접기 */
-.board tr.more { display: none; }
-.board.open tr.more { display: table-row; }
-.board-more { display: block; width: 100%; padding: 10px; background: transparent; border: 0; border-top: 1px dashed var(--line); color: var(--paper); font-family: var(--f-pixel); font-size: 0.95rem; cursor: pointer; }
-.board-more:hover { color: var(--postit); }
-
 /* 음원·MV 공개 전 안내 */
 .listen-soon { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 28px auto 0; padding: 26px 16px; max-width: 560px; border: 2px dashed var(--line); text-align: center; color: var(--muted); }
 .listen-soon b { font-family: var(--f-display); font-weight: 400; font-size: clamp(20px, 5vw, 28px); color: var(--postit); letter-spacing: 0.04em; }
@@ -627,3 +621,20 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 #band { padding-top: 26px; }
 .band-top { margin-bottom: 30px; }
 @media (max-width: 640px) { #band { padding-top: 24px; } .band-top { margin-bottom: 28px; } }
+
+/* 순위표: 1위만 배경 강조, 나머지 줄은 같은 어두운 배경. 순위권은 번호 색으로만 구분 */
+.board tr.tier1 td { background: color-mix(in srgb, var(--postit) 10%, transparent); }
+.board tr.tier1 .rank { color: var(--postit); }
+.board tr.tier2 .rank { color: var(--overdue); }
+.board tr.tier3 .rank { color: var(--postit); }
+.board tr.tier4 .rank { color: #7dffb8; }
+.board tr.mine td { background: color-mix(in srgb, var(--paper) 10%, transparent); box-shadow: inset 3px 0 0 var(--paper); }
+
+/* 순위표 페이지 넘기기 (10명씩) */
+.board-pager { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 10px; border-top: 1px dashed var(--line); }
+.board-pager button { min-width: 38px; padding: 7px 10px; background: transparent; border: 2px solid var(--line); color: var(--paper); font-family: var(--f-pixel); font-size: 0.85rem; cursor: pointer; }
+.board-pager button:hover:not(:disabled) { border-color: var(--postit); color: var(--postit); }
+.board-pager button.on { background: var(--postit); border-color: var(--postit); color: var(--ink); }
+.board-pager button:disabled { opacity: 0.3; cursor: default; }
+.board-pager { flex-wrap: nowrap; }
+.board-range { margin: 0; padding: 0 0 10px; text-align: center; color: var(--muted); font-family: var(--f-pixel); font-size: 0.85rem; }

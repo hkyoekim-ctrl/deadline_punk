@@ -96,7 +96,7 @@
   }
 
   function create(cfg) {
-    const size = cfg.size || 20;
+    const size = Math.max(cfg.size || 20, 100); // 10위 뒤는 묶음 버튼으로 펼쳐 보여 줍니다
     if (cfg.provider === "supabase" && cfg.supabaseUrl && cfg.supabaseAnonKey) {
       return supabaseStore(cfg.supabaseUrl, cfg.supabaseAnonKey, size);
     }
