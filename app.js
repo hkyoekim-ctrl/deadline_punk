@@ -362,7 +362,7 @@
         pager.append(b);
       }
       pager.append(step("▶", boardPage + 1, boardPage === pages - 1));
-      board.append(pager, el("p", { class: "board-range" }, `${boardPage * PER + 1}~${Math.min(rows.length, boardPage * PER + PER)}위`));
+      board.append(pager);
     }
   }
   $("#board-refresh").addEventListener("click", (e) => {

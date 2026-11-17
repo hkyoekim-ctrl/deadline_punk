@@ -637,4 +637,3 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .board-pager button.on, .board-pager button.on:hover, .board-pager button.on:focus { background: var(--postit); border-color: var(--postit); color: var(--ink); }
 .board-pager button:disabled { opacity: 0.3; cursor: default; }
 .board-pager { flex-wrap: nowrap; }
-.board-range { margin: 0; padding: 0 0 10px; text-align: center; color: var(--muted); font-family: var(--f-pixel); font-size: 0.85rem; }
