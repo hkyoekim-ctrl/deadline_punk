@@ -633,8 +633,8 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 /* 순위표 페이지 넘기기 (10명씩) */
 .board-pager { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 10px; border-top: 1px dashed var(--line); }
 .board-pager button { min-width: 38px; padding: 7px 10px; background: transparent; border: 2px solid var(--line); color: var(--paper); font-family: var(--f-pixel); font-size: 0.85rem; cursor: pointer; }
-.board-pager button:hover:not(:disabled) { border-color: var(--postit); color: var(--postit); }
-.board-pager button.on { background: var(--postit); border-color: var(--postit); color: var(--ink); }
+@media (hover: hover) { .board-pager button:hover:not(:disabled):not(.on) { border-color: var(--postit); color: var(--postit); } }
+.board-pager button.on, .board-pager button.on:hover, .board-pager button.on:focus { background: var(--postit); border-color: var(--postit); color: var(--ink); }
 .board-pager button:disabled { opacity: 0.3; cursor: default; }
 .board-pager { flex-wrap: nowrap; }
 .board-range { margin: 0; padding: 0 0 10px; text-align: center; color: var(--muted); font-family: var(--f-pixel); font-size: 0.85rem; }
