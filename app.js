@@ -452,7 +452,7 @@
       const res = await fetch(src, { method: "HEAD", cache: "no-store" });
       if (!res.ok) return;
     } catch { return; }
-    frame = el("iframe", { src, title: "마감펑크 러너 게임", allow: "autoplay; fullscreen", loading: "eager" });
+    frame = el("iframe", { src, title: "마감펑크 러너 게임", allow: "autoplay; fullscreen; web-share", loading: "eager" });
     // 공유 링크·점수 이미지에 들어갈 주소 (config.site.url, 없으면 지금 페이지 주소)
     frame.addEventListener("load", () => {
       const shareUrl = (C.site && C.site.url) || (window.MP_PREVIEW ? "" : location.href.split("#")[0]);
