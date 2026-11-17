@@ -183,7 +183,7 @@ const GAP_MAX = 58, GAP_REGEN = 3, HIT_COST = 22, COFFEE_GAIN = 22;
 const FEVER_NOTES = 30, FEVER_TIME = 5, SWING_TIME = 6, SWING_PTS = 50;
 const NOTE_PTS = 5, COFFEE_PTS = 20, DIST_PER_PT = 8;
 // 콤보: 음표 먹기·장애물 넘기·부수기로 쌓임 (10마다 배수 +0.5, 최대 ×3), 부딪히면 리셋
-const STORM_TIME = 2.4, STORM_EXTRA = 170, SHIELD_TIME = 5, COMBO_STEP = 10, MULT_MAX_STEPS = 4, RUSH_EVERY = 40, RUSH_WARN = 4, RUSH_TIME = 4.5, RUSH_BONUS = 100;
+const COMBO_SHIELD = 3, STORM_TIME = 2.4, STORM_EXTRA = 170, SHIELD_TIME = 5, COMBO_STEP = 10, MULT_MAX_STEPS = 4, RUSH_EVERY = 40, RUSH_WARN = 4, RUSH_TIME = 4.5, RUSH_BONUS = 100;
 const BOOST_TIME = 4, BOOST_MUL = 1.4, BOOST_GAP = 4, CHAIR_EXTRA = 35, PEN_EXTRA = 90, DJUMP_V = -330, DJUMP3_V = -240, DRINK_Y = 32;  // 아이스 아메리카노 · 굴러오는 의자
 
 const cv = document.getElementById('c');
@@ -554,25 +554,24 @@ let prevState = 'play';
 let best = store.get('best', 0);
 let g, p;
 function reset() {
-  g = { sheets: [], storm: null, shield: 0, fx: null, nextCombo: 10, stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
+  g = { sheets: [], storm: null, shield: 0, fx: null, nextCombo: 100, stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
         nextObs: 220, nextCoffee: 2400 + Math.random() * 1200, shake: 0, dieT: 0, scroll: 0, hits: 0 };
   p = { y: GROUND, vy: 0, ground: true, slide: 0, slideHeld: false, holdJump: false, buf: 0, coyote: 0, inv: 0, anim: 0 };
 }
 reset();
-// 달릴수록 배경이 바뀜: 기록(m) 0 → 도시, 600 → 교외, 1500 → 웃긴 세계, 3000 → 점점 더 이상한 세계
-const STAGES = [{ from: 0, name: '야근 도시' }, { from: 1000, name: '한적한 교외' }, { from: 1500, name: '웃긴 세계' }, { from: 3000, name: '점점 더 이상한 세계' }, { from: 5000, name: '시계 세계' }, { from: 7000, name: '글리치 세계' }, { from: 9000, name: '작업실' }];
+// 달릴수록 배경이 바뀜: STAGES 거리(m)마다 다음 배경으로 크로스페이드
+const STAGES = [{ from: 0, name: '야근 도시' }, { from: 1000, name: '한적한 교외' }, { from: 2500, name: '웃긴 세계' }, { from: 4000, name: '점점 더 이상한 세계' }, { from: 6500, name: '시계 세계' }, { from: 8500, name: '글리치 세계' }, { from: 11000, name: '작업실' }];
 const stageOf = m => { let i = 0; STAGES.forEach((st, k) => { if (m >= st.from) i = k; }); return i; };
 const stageReady = i => i === 0 || !!(ART.img[`s${i}_sky`] && ART.img[`s${i}_far`] && ART.img[`s${i}_near`] && ART.img[`s${i}_ground`]);
 // 큰 글씨 이펙트 (FEVER / ROCK / 콤보 이벤트 등)
 function bigFx(text, sub, color, dur = 1.6) { g.fx = { text, sub, color, t: 0, dur }; }
-const COMBO_MILESTONES = [10, 25, 50, 75, 100];
-const nextMilestone = c => { for (const m of COMBO_MILESTONES) if (c < m) return m; return Math.floor(c / 50) * 50 + 50; };
+const nextMilestone = c => Math.floor(c / 100) * 100 + 100;  // 100콤보마다 이벤트 + 잠깐 무적
 function addCombo(n = 1) {
   g.combo += n; if (g.combo > g.maxCombo) g.maxCombo = g.combo; g.comboPop = 0.35;
   if (g.combo >= g.nextCombo) {  // 콤보 이벤트: 마감 게이지 회복 + 큰 글씨
     const hit = g.combo; g.nextCombo = nextMilestone(g.combo);
-    g.gap = Math.min(GAP_MAX + 10, g.gap + 12);
-    bigFx(`${hit} COMBO!`, '딱 한 번만 제게 기회를 주세요~', hit >= 50 ? '#ff3d7f' : '#ffd23f');
+    g.gap = Math.min(GAP_MAX + 10, g.gap + 12); g.shield = Math.max(g.shield, COMBO_SHIELD);
+    bigFx(`${hit} COMBO!`, '딱 한 번만 제게 기회를 주세요~', '#ff3d7f');
     sfx.coffee(); g.shake = 0.12; burst(PX + 6, GROUND - 14, 18, ['#ffd23f', '#ff3d7f', '#ffffff'], 110);
   }
 }
@@ -1056,7 +1055,7 @@ function update(dt) {
         o.hit = true; o.x = -999; addCombo(); sfx.note();
         burst(PX + 16, pb.y + 8, 16, ['#ffd23f', '#ff3b6b', '#ffffff'], 140);
       } else if (overlap(pb, hb)) {
-        o.hit = true; p.inv = 1.1; g.gap -= o.storm ? GAP_MAX : HIT_COST;  // 종이 폭풍은 보호막 없이 맞으면 즉사 if (g.combo >= COMBO_STEP) { g.rushMsg = 0.8; g.rushMsgText = 'COMBO BREAK'; } g.combo = 0; g.nextCombo = 10; g.shake = 0.25; g.hits++;
+        o.hit = true; p.inv = 1.1; g.gap -= o.storm ? GAP_MAX : HIT_COST; if (g.combo >= COMBO_STEP) { g.rushMsg = 0.8; g.rushMsgText = 'COMBO BREAK'; } g.combo = 0; g.nextCombo = 100; g.shake = 0.25; g.hits++;  // 종이 폭풍은 보호막 없이 맞으면 즉사
         sfx.hit(); burst(o.x + o.w / 2, o.y + o.h / 2, 14, ['#f7f1e3', '#e63946', '#ffd23f'], 110);
       }
     }
