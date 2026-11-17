@@ -60,6 +60,17 @@ input:focus{border-color:var(--yellow)}
 .keys .kb{font-size:.95em;border:2px solid var(--yellow);color:var(--yellow);background:rgba(255,210,63,.1);padding:.05em .4em;margin:0 0 0 .25em}
 .cnote{font-size:.6em;text-align:center}
 @media (max-width:560px){.ctrl{flex-direction:column}.cc{font-size:1.15em}}
+@media (pointer:coarse){  /* 모바일: PC 키 안내는 숨기고, 한 화면에 시작하기 버튼까지 보이도록 압축 */
+  .ctrl .cc:first-child{display:none}
+  .ovGuide{gap:.25em;padding:.4em .8em}
+  .ovGuide .big{font-size:1.2em}
+  .cc{font-size:1em;padding:.35em .7em;line-height:1.35}
+  .cc .gh{margin-bottom:.1em}
+  .crow{padding:.05em 0}
+  .guide{margin:0}.gcol{padding:.3em .5em;line-height:1.4;font-size:.95em}
+  .ovGuide .help{display:none}
+  .cnote{font-size:.55em}
+}
 #ovSelect{background:rgba(14,9,24,.78);gap:.45em}
 #ovPause{z-index:7}
 #chars{display:flex;gap:.5em;flex-wrap:wrap;justify-content:center}
@@ -98,7 +109,7 @@ input:focus{border-color:var(--yellow)}
         <div class="crow"><span class="act">슬라이드</span><span class="keys">아래로 스와이프</span></div>
       </div>
     </div>
-    <div class="gs cnote">공중에서 한 번 더 = 2단 점프 · 길게 누르면 더 높이 · 캐릭터를 고르면 시작 전까지 연습할 수 있어요</div>
+    <div class="gs cnote">공중에서 두 번 더 = 3단 점프 · 길게 누르면 더 높이 · 캐릭터를 고르면 시작 전까지 연습할 수 있어요</div>
     <div class="guide">
       <div class="gcol" style="text-align:center;font-size:1.1em">
         <div>마감을 도와줄 다양한 아이템을 사용해보세요.</div>

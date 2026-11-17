@@ -597,3 +597,12 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
   0%, 100% { filter: drop-shadow(6px 6px 0 #000) drop-shadow(0 0 3px rgba(255, 90, 71, 0.2)); }
   50% { filter: drop-shadow(6px 6px 0 #000) drop-shadow(0 0 9px rgba(255, 90, 71, 0.5)); }
 }
+
+/* 계좌 후원 카드: 노란 포스트잇 */
+.support-card.account { background: var(--postit); border-color: #000; color: var(--ink); box-shadow: 6px 6px 0 var(--overdue); }
+.support-card.account h3 { color: var(--ink); }
+.support-card.account p { color: color-mix(in srgb, var(--ink) 78%, transparent); }
+.support-card.account .account-number { color: var(--ink); }
+.support-card.account .btn { background: var(--ink); color: var(--paper); box-shadow: 3px 3px 0 var(--overdue); }
+.support-grid { justify-items: start; }
+.support-card.account { width: fit-content; max-width: 100%; padding: 14px 20px 16px; gap: 8px; }
