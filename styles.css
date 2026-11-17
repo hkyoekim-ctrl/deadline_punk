@@ -637,3 +637,24 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .board-pager button.on, .board-pager button.on:hover, .board-pager button.on:focus { background: var(--postit); border-color: var(--postit); color: var(--ink); }
 .board-pager button:disabled { opacity: 0.3; cursor: default; }
 .board-pager { flex-wrap: nowrap; }
+
+/* 발매 카운트다운: 전광판 패널 */
+.countdown {
+  --led: #ffb627; --led-red: #ff4a3d;
+  width: min(100%, 420px); margin-top: 14px; padding: 8px 8px 10px;
+  background: #080404; border: 4px solid #3d1d1a; box-shadow: 0 0 0 2px #000, 5px 5px 0 2px #000;
+  font-family: var(--f-pixel); -webkit-font-smoothing: none;
+}
+.countdown .cd-head, .countdown .cd-row, .countdown .cd-now {
+  background-color: #0c0606;
+  background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05) 0 1px, transparent 1.4px);
+  background-size: 4px 4px;
+}
+.countdown .cd-head { padding: 6px 0 4px; font-size: 12px; letter-spacing: 0.3em; color: var(--led-red); text-shadow: 0 0 6px rgba(255,74,61,.7); }
+.countdown .cd-row { display: flex; align-items: center; justify-content: center; gap: clamp(4px, 1.6vw, 10px); padding: 12px 6px; }
+.countdown .cd-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 2.2em; }
+.countdown .cd-num { font-size: clamp(30px, 9vw, 46px); line-height: 1; color: var(--led); font-variant-numeric: tabular-nums; text-shadow: 0 0 8px rgba(255,182,39,.65), 0 0 1px var(--led); }
+.countdown .cd-lab { font-size: 10px; letter-spacing: 0.15em; color: #8a6a3a; }
+.countdown .cd-colon { font-size: clamp(26px, 8vw, 40px); line-height: 1; padding-bottom: 0.1em; color: var(--led); text-shadow: 0 0 8px rgba(255,182,39,.65); }
+.countdown .cd-now { padding: 14px 0; font-size: clamp(26px, 7vw, 36px); color: #ffe9a8; text-shadow: 0 0 8px rgba(255,182,39,.65); }
+.countdown .led-blink { animation: none; }

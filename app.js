@@ -67,7 +67,25 @@
     // 아직 공개 전: 로고·영상 자리는 비워 두고 안내 문구만
     $("#stream-list").hidden = true;
     mv.hidden = true;
-    $("#listen .wrap").append(el("p", { class: "listen-soon" }, el("b", {}, "2026. 11. 20 RELEASE"), el("span", {}, "음원 사이트 및 유튜브에서 만나보세요")));
+    const cd = el("div", { class: "countdown", role: "timer", "aria-label": "발매까지 남은 시간" });
+    $("#listen .wrap").append(el("div", { class: "listen-soon" },
+      el("b", {}, "2026. 11. 20 RELEASE"), el("span", {}, "음원 사이트 및 유튜브에서 만나보세요"), cd));
+    const target = new Date(C.single.releaseAt).getTime();
+    const two = (n) => String(n).padStart(2, "0");
+    const cell = (v) => el("div", { class: "cd-cell" }, el("span", { class: "cd-num" }, v));
+    const colon = () => el("span", { class: "cd-colon" }, ":");
+    const tick = () => {
+      const left = target - Date.now();
+      if (!(left > 0)) {
+        cd.replaceChildren(el("div", { class: "cd-now" }, "지금 공개!"));
+        return;
+      }
+      const h = Math.floor(left / 36e5), m = Math.floor(left / 6e4) % 60, sec = Math.floor(left / 1e3) % 60;
+      cd.replaceChildren(
+        el("div", { class: "cd-row" }, cell(two(h)), colon(), cell(two(m)), colon(), cell(two(sec))));
+      setTimeout(tick, 1000 - (Date.now() % 1000));
+    };
+    if (!Number.isNaN(target)) tick();
   }
   if (vid && !window.MP_PREVIEW) {
     mv.append(el("iframe", {
