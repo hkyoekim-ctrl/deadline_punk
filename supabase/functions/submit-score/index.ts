@@ -13,8 +13,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const NAME_MAX = 12;
 const MESSAGE_MAX = 40;
-const POINTS_PER_SEC = 100;   // DB 제약과 같은 값
-const SCORE_SLACK = 500;
+const POINTS_PER_SEC = 400;   // DB 제약과 같은 값 (콤보 ×3 · 피버 2배 · 아아 부스트 포함 이론 최대치 위)
+const SCORE_SLACK = 1000;
 const DIST_PER_SEC = 53;   // 최고 속도 300px/s × 부스트 1.4 ÷ 8
 const DIST_SLACK = 20;
 const MAX_DURATION_MS = 3_600_000;

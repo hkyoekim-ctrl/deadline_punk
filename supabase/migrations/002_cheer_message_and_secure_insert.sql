@@ -22,12 +22,12 @@ alter table public.scores add constraint message_rules check (
   and message !~ '[[:cntrl:]]'
 );
 
--- 점수 상한: 피버(거리 점수 2배)·악기 휘두르기(+50)를 넣어도 초당 100점 + 여유 500점을 넘을 수 없음
+-- 점수 상한: 피버(거리 점수 2배)·악기 휘두르기(+50)를 넣어도 초당 400점 + 여유 1000점 (콤보 ×3 · 피버 2배 · 아아 부스트 포함)을 넘을 수 없음
 -- 거리 상한: 최고 속도 300px/s × 아아 부스트 1.4 ÷ 8px = 초당 52.5m → 초당 53m + 여유 20m
 -- 점수 ≥ 거리: 점수 = 거리 + 보너스(0 이상)
 alter table public.scores drop constraint if exists plausible_score;
 alter table public.scores add constraint plausible_score check (
-  score <= duration_ms / 1000.0 * 100 + 500
+  score <= duration_ms / 1000.0 * 400 + 1000
   and distance <= duration_ms / 1000.0 * 53 + 20
   and score >= distance
 ) not valid;
