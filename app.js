@@ -253,9 +253,7 @@
   try { mine = JSON.parse(sessionStorage.getItem(MY_KEY)); } catch { /* 없음 */ }
 
   $("#board-mode").innerHTML = "";
-  $("#board-mode").append(store.kind === "local"
-    ? el("span", { class: "mode" }, "데모 모드 · 기록이 이 브라우저에만 저장돼요")
-    : document.createTextNode("전체 공개 순위 · 10명씩 넘겨 보세요"));
+  if (store.kind === "local") $("#board-mode").append(el("span", { class: "mode" }, "데모 모드 · 기록이 이 브라우저에만 저장돼요"));
 
   const fmt = new Intl.NumberFormat("ko-KR");
   // 기록(score)은 마감에게서 도망친 거리(m). 1000m 부터는 km 로 표기
