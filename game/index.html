@@ -65,7 +65,7 @@ input:focus{border-color:var(--yellow)}
 #chars{display:flex;gap:.5em;flex-wrap:wrap;justify-content:center}
 .char{display:flex;flex-direction:column;align-items:center;gap:.2em;background:rgba(0,0,0,.55);border:2px solid #3b2c55;padding:.4em .5em .35em;cursor:pointer;min-width:4.6em;color:var(--ink);font:inherit;box-shadow:none}
 .char canvas{width:3.6em;height:3.6em;image-rendering:pixelated}
-.char .role{font-size:.72em}.char .who{font-size:.55em;color:var(--dim)}
+.char .role{font-size:.72em}.char .who{font-size:.6em;color:var(--dim)}
 .char.on{border-color:var(--yellow);background:rgba(255,210,63,.12);transform:translateY(-.2em)}
 .char.picked{border-color:var(--pink);background:rgba(255,59,107,.25)}
 .timer{width:16em;max-width:70%;height:.35em;background:#3b2c55}
@@ -336,11 +336,11 @@ function spr(name, x, y, c = ctx) {
    시안이 오기 전까지는 기본 주인공 스프라이트를 색만 바꾼 임시 버전.
    시안 atlas에 {id}_run1 같은 프레임이 있으면 그걸 우선 사용. */
 const CHARS = [
-  { id: 'vocal',  role: '보컬',   who: '남',  pal: { H: '#ff3b6b', h: '#c41f4f', J: '#27c4b0', j: '#17897c', P: '#5a4bb0', p: '#3d3280' } },
-  { id: 'guitar', role: '기타',   who: '남',  pal: { H: '#ffd23f', h: '#c9a227', J: '#ff3b4e', j: '#b3183a', P: '#2b2d42', p: '#1b1533' } },
-  { id: 'bass',   role: '베이스', who: '남',  pal: { H: '#4fa3ff', h: '#2c6fc4', J: '#5a4bb0', j: '#3d3280', P: '#27c4b0', p: '#17897c' } },
-  { id: 'keys',   role: '키보드', who: '여',  pal: { H: '#b98cff', h: '#7d55c9', J: '#ffffff', j: '#b9b3d6', P: '#ff3b6b', p: '#c41f4f' }, long: true },
-  { id: 'drums',  role: '드럼',   who: '여',  pal: { H: '#ff8a3d', h: '#c45a1c', J: '#2b2d42', j: '#1b1533', P: '#ffd23f', p: '#c9a227' }, long: true }
+  { id: 'vocal',  role: '보컬',   who: '임국영',  pal: { H: '#ff3b6b', h: '#c41f4f', J: '#27c4b0', j: '#17897c', P: '#5a4bb0', p: '#3d3280' } },
+  { id: 'guitar', role: '기타',   who: '이승용',  pal: { H: '#ffd23f', h: '#c9a227', J: '#ff3b4e', j: '#b3183a', P: '#2b2d42', p: '#1b1533' } },
+  { id: 'bass',   role: '베이스', who: '구현우',  pal: { H: '#4fa3ff', h: '#2c6fc4', J: '#5a4bb0', j: '#3d3280', P: '#27c4b0', p: '#17897c' } },
+  { id: 'keys',   role: '키보드', who: '송지현',  pal: { H: '#b98cff', h: '#7d55c9', J: '#ffffff', j: '#b9b3d6', P: '#ff3b6b', p: '#c41f4f' }, long: true },
+  { id: 'drums',  role: '드럼',   who: '김혜경',  pal: { H: '#ff8a3d', h: '#c45a1c', J: '#2b2d42', j: '#1b1533', P: '#ffd23f', p: '#c9a227' }, long: true }
 ];
 const BASE_PAL = { H: '#ff3b6b', h: '#c41f4f', J: '#27c4b0', j: '#17897c', P: '#5a4bb0', p: '#3d3280' };
 let curChar = store.get('char', 'vocal');
@@ -1091,7 +1091,7 @@ function buildSelect() {
     b.className = 'char'; b.type = 'button'; b.setAttribute('role', 'option');
     const pc = document.createElement('canvas'); pc.width = 64; pc.height = 64;
     const r = document.createElement('div'); r.className = 'role'; r.textContent = c.role;
-    const w = document.createElement('div'); w.className = 'who'; w.textContent = c.who === '여' ? 'FEMALE' : 'MALE';
+    const w = document.createElement('div'); w.className = 'who'; w.textContent = c.who;
     b.append(pc, r, w);
     b.addEventListener('pointerenter', () => { if (sel.open) setSel(i); });
     b.addEventListener('click', e => { e.currentTarget.blur(); if (sel.open) pickChar(i); });
