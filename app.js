@@ -250,7 +250,7 @@
     $("#crowd").hidden = false;
     const head = el("div", { class: "led-head" }, el("span", { class: "led-blink" }, "●"), " NOW 1ST ", el("span", { class: "led-blink" }, "●"));
     const ticker = (lines) => {
-      const msg = lines.join("  ★  ") + "  ★  ";
+      const msg = lines.join("          ★          ") + "          ★          ";
       const span = el("span", {}, msg);
       span.style.animationDuration = Math.max(14, (msg.length * 13 + 520) / 85) + "s";
       return el("div", { class: "led-ticker" }, span);

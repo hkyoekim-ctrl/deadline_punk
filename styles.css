@@ -437,21 +437,16 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
   text-shadow: 0 0 6px color-mix(in srgb, #5cf2a0 60%, transparent);
   border-top: 2px solid #2a1210;
 }
-.led-ticker span { display: inline-block; padding-left: 100%; animation: led-scroll 14s linear infinite; }
+.led-ticker span { white-space: pre; display: inline-block; padding-left: 100%; animation: led-scroll 14s linear infinite; }
 @keyframes led-scroll { to { transform: translateX(-100%); } }
 .leader:hover { border-color: #6a2d27; }
 .leader:hover .led-row { color: #ffd36a; }
 /* 이름·점수 줄: 오른쪽에서 들어와 멈췄다가 왼쪽으로 빠지는 전광판 동작 */
 .led-row { overflow: hidden; }
 .led-inner { display: inline-flex; align-items: baseline; flex-wrap: wrap; justify-content: center; gap: 4px 14px; max-width: 100%;
-  animation: led-slide 7s steps(28, jump-end) infinite; }
-@keyframes led-slide {
-  0% { transform: translateX(120%); }
-  18%, 78% { transform: translateX(0); }
-  100% { transform: translateX(-160%); }
-}
-.led-score { animation: led-flash 0.5s steps(2, jump-none) infinite; }
-@keyframes led-flash { 50% { color: var(--led); } }
+  animation: led-glint 2.4s ease-in-out infinite, led-flick 1.3s steps(1, end) infinite; }
+@keyframes led-flick { 0%, 100% { opacity: 1; } 62% { opacity: 0.82; } 68% { opacity: 1; } 90% { opacity: 0.9; } 94% { opacity: 1; } }
+@keyframes led-glint { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.45) drop-shadow(0 0 6px rgba(255,182,39,.55)); } }
 
 /* 전광판 아래 응원하는 관객 (도트) */
 .crowd { display: block; width: min(100%, 520px); height: auto; aspect-ratio: 130 / 24; image-rendering: pixelated; margin-top: -22px; position: relative; z-index: 0; }

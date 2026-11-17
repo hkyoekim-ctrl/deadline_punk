@@ -554,7 +554,7 @@ let prevState = 'play';
 let best = store.get('best', 0);
 let g, p;
 function reset() {
-  g = { sheets: [], storm: null, shield: 0, fx: null, nextCombo: 100, stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
+  g = { sheets: [], storm: null, shield: 0, fx: null, nextCombo: 50, stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
         nextObs: 220, nextCoffee: 2400 + Math.random() * 1200, shake: 0, dieT: 0, scroll: 0, hits: 0 };
   p = { y: GROUND, vy: 0, ground: true, slide: 0, slideHeld: false, holdJump: false, buf: 0, coyote: 0, inv: 0, anim: 0 };
 }
@@ -565,7 +565,8 @@ const stageOf = m => { let i = 0; STAGES.forEach((st, k) => { if (m >= st.from) 
 const stageReady = i => i === 0 || !!(ART.img[`s${i}_sky`] && ART.img[`s${i}_far`] && ART.img[`s${i}_near`] && ART.img[`s${i}_ground`]);
 // 큰 글씨 이펙트 (FEVER / ROCK / 콤보 이벤트 등)
 function bigFx(text, sub, color, dur = 1.6) { g.fx = { text, sub, color, t: 0, dur }; }
-const nextMilestone = c => Math.floor(c / 100) * 100 + 100;  // 100콤보마다 이벤트 + 잠깐 무적
+const COMBO_EVENT = 50;
+const nextMilestone = c => Math.floor(c / COMBO_EVENT) * COMBO_EVENT + COMBO_EVENT;  // 50콤보마다 이벤트 + 잠깐 무적
 function addCombo(n = 1) {
   g.combo += n; if (g.combo > g.maxCombo) g.maxCombo = g.combo; g.comboPop = 0.35;
   if (g.combo >= g.nextCombo) {  // 콤보 이벤트: 마감 게이지 회복 + 큰 글씨
@@ -1055,7 +1056,7 @@ function update(dt) {
         o.hit = true; o.x = -999; addCombo(); sfx.note();
         burst(PX + 16, pb.y + 8, 16, ['#ffd23f', '#ff3b6b', '#ffffff'], 140);
       } else if (overlap(pb, hb)) {
-        o.hit = true; p.inv = 1.1; g.gap -= o.storm ? GAP_MAX : HIT_COST; if (g.combo >= COMBO_STEP) { g.rushMsg = 0.8; g.rushMsgText = 'COMBO BREAK'; } g.combo = 0; g.nextCombo = 100; g.shake = 0.25; g.hits++;  // 종이 폭풍은 보호막 없이 맞으면 즉사
+        o.hit = true; p.inv = 1.1; g.gap -= o.storm ? GAP_MAX : HIT_COST; if (g.combo >= COMBO_STEP) { g.rushMsg = 0.8; g.rushMsgText = 'COMBO BREAK'; } g.combo = 0; g.nextCombo = 50; g.shake = 0.25; g.hits++;  // 종이 폭풍은 보호막 없이 맞으면 즉사
         sfx.hit(); burst(o.x + o.w / 2, o.y + o.h / 2, 14, ['#f7f1e3', '#e63946', '#ffd23f'], 110);
       }
     }
