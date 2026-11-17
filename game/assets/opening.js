@@ -396,7 +396,11 @@
     ctx.drawImage(gcv, sx * 2, sy * 2, SW, SH);
     c = ctx;
     ptext('편집자', (ph.cx + sx) * 2, (ph.nameY + sy) * 2 + 2, 12, '#ffffff', 'center');
-    if (state !== 'ring') ptext('통화 중', (ph.cx + sx) * 2, (ph.nameY + sy) * 2 + 22, 11, state === 'shout' ? '#ff8aa0' : '#2ecc71', 'center');
+    if (state !== 'ring') {  // 통화 중: 천천히 깜박임 (0.5초 켜짐 / 0.5초 어두움)
+      ctx.globalAlpha = Math.floor(t * 2) % 2 ? 0.25 : 1;
+      ptext('통화 중', (ph.cx + sx) * 2, (ph.nameY + sy) * 2 + 22, 11, state === 'shout' ? '#ff8aa0' : '#2ecc71', 'center');
+      ctx.globalAlpha = 1;
+    }
     let cur = null; for (const l of L) if (ot >= l[0]) cur = l;
     const nextStart = cur ? (L[L.indexOf(cur) + 1] || [cue.drop])[0] : 0;
     if (cur && ot < nextStart) bubble(ot, t, cur, cur[2] === '작가님' || cur[2] === '계세요?');

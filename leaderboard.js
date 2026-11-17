@@ -9,7 +9,7 @@
   // Edge Function 과 같은 정리: 제어문자·보이지 않는 문자 제거, 공백 하나로
   const clean = (v) => String(v ?? "").normalize("NFC").replace(/\s+/g, " ")
     .replace(/[\u0000-\u001f\u007f\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]/g, "").trim();
-  const CHARACTERS = { vocal: "보컬", guitar: "기타", bass: "베이스", keys: "건반", drums: "드럼" };
+  const CHARACTERS = { vocal: "보컬", guitar: "기타", bass: "베이스", keys: "키보드", drums: "드럼" };
 
   // 게임이 보낸 점수를 대략 검증합니다. 통과하면 정리된 값을, 아니면 { error } 를 돌려줍니다.
   function validate(entry) {

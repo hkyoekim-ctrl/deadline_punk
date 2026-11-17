@@ -1309,10 +1309,12 @@ function drawSign(t, c = ctx) {
     drawLED(c, sx, SIGN.y, t);
   }
 }
+const NEAR_SPEED = { 6: 1 };  // 작업실은 near 와 바닥이 한 장면이라 같은 속도로 (안 그러면 바닥이 따로 노는 것처럼 보임)
+const nearF = st => NEAR_SPEED[st] || 0.4;
 const STAGE_SIGN = { 1: [106, 1106], 2: [66, 1146], 3: [44, 1168], 4: [100, 1112], 5: [100, 1112], 6: [100, 1112] };  // 단계 near 이미지에 그려진 전광판 x (y78, 68x22)
 function drawStageSign(c, st, t) {
   const xs = STAGE_SIGN[st], img = ART.img[`s${st}_near`]; if (!xs || !img) return;
-  const o = Math.floor(g.scroll * 0.4) % img.width;
+  const o = Math.floor(g.scroll * nearF(st)) % img.width;
   for (const base of [-o, img.width - o]) for (const x of xs) {
     const sx = base + x; if (sx + SIGN.w < 0 || sx > W) continue;
     drawLED(c, sx, SIGN.y, t);
@@ -1321,7 +1323,7 @@ function drawStageSign(c, st, t) {
 function drawStageImgs(c, st, t = 0) {  // 이미지 한 벌(sky/far/near/ground)을 그대로 그림
   const I = ART.img, tl = (img, f) => { const o = Math.floor(g.scroll * f) % img.width; c.drawImage(img, -o, 0); c.drawImage(img, img.width - o, 0); };
   c.drawImage(I[`s${st}_sky`], 0, 0);
-  tl(I[`s${st}_far`], 0.15); tl(I[`s${st}_near`], 0.4); drawStageSign(c, st, t);
+  tl(I[`s${st}_far`], 0.15); tl(I[`s${st}_near`], nearF(st)); drawStageSign(c, st, t);
   const gi = I[`s${st}_ground`], gw = gi.width, go = Math.floor(g.scroll) % gw;
   for (let x = -go; x < W; x += gw) c.drawImage(gi, x, GROUND);
 }
