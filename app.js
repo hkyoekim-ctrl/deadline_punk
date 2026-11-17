@@ -61,6 +61,14 @@
 
   const mv = $("#mv");
   const vid = C.single.youtubeId;
+  const anyStream = C.single.streaming.some((s) => s.url && !isPlaceholder(s.url));
+  const soon = !vid && !anyStream;
+  if (soon) {
+    // 아직 공개 전: 로고·영상 자리는 비워 두고 안내 문구만
+    $("#stream-list").hidden = true;
+    mv.hidden = true;
+    $("#listen .wrap").append(el("p", { class: "listen-soon" }, el("b", {}, "2026. 11. 20 RELEASE"), el("span", {}, "음원 사이트 및 유튜브에서 만나보세요")));
+  }
   if (vid && !window.MP_PREVIEW) {
     mv.append(el("iframe", {
       src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(vid)}`,
@@ -83,7 +91,7 @@
     if (i) mvCred.append(document.createTextNode("  ·  "));
     mvCred.append(el("span", { class: "mvc" }, el("b", {}, r.role), " " + r.names));
   });
-  mvCred.hidden = !mvCred.childNodes.length;
+  mvCred.hidden = soon || !mvCred.childNodes.length;
 
   // 앨범 커버 옆 크레딧
   const cred = $("#credits");
@@ -261,16 +269,21 @@
       return;
     }
     const part = MPLeaderboard.CHARACTERS[top.character];
+    const msg = (top.message || "").trim();
+    const nameView = el("span", { class: "led-inner" },
+      el("span", { class: "led-name" }, top.name),
+      part ? el("span", { class: "led-part" }, `[${part}]`) : null,
+      el("span", { class: "led-score" }, fmtDist(top.score)));
+    const views = [el("div", { class: "led-view" }, nameView)];
+    if (msg) views.push(el("div", { class: "led-view" }, el("span", { class: "led-inner" }, el("span", { class: "led-msg" }, `“${msg}”`))));
     box.replaceChildren(
       head,
-      el("div", { class: "led-row" }, el("span", { class: "led-inner" },
-        el("span", { class: "led-name" }, top.name),
-        part ? el("span", { class: "led-part" }, `[${part}]`) : null,
-        el("span", { class: "led-score" }, fmtDist(top.score)))),
+      el("div", { class: "led-row" + (msg ? " alt" : "") }, ...views),
       ticker(feed.length ? feed : [`${top.name} 님이 마감에서 가장 멀리 도망쳤어요`])
     );
   }
 
+  let boardOpen = false;
   async function renderBoard() {
     const board = $("#board");
     let rows;
@@ -288,9 +301,10 @@
       return;
     }
     const tbody = el("tbody");
+    const SHOW = 10;
     rows.forEach((r, i) => {
       const isMine = mine && r.name === mine.name && r.score === mine.score && r.created_at === mine.created_at;
-      const cls = [i < 3 ? `top${i + 1}` : "", isMine ? "mine" : ""].join(" ").trim() || null;
+      const cls = [i < 3 ? `top${i + 1}` : "", isMine ? "mine" : "", i >= SHOW ? "more" : ""].join(" ").trim() || null;
       tbody.append(el("tr", { class: cls },
         el("td", { class: "rank" }, String(i + 1).padStart(2, "0")),
         el("td", { class: "name" }, r.name),
@@ -303,6 +317,14 @@
       el("thead", {}, el("tr", {},
         el("th", {}, "#"), el("th", {}, "NAME"), el("th", { class: "char" }, "PART"), el("th", {}, "MESSAGE"), el("th", { class: "num" }, "DISTANCE"))),
       tbody));
+    if (rows.length > SHOW) {
+      const wrap = $("#board");
+      wrap.classList.toggle("open", boardOpen);
+      const btn = el("button", { class: "board-more", type: "button", "aria-expanded": String(boardOpen) },
+        boardOpen ? "▲ 접기" : `▼ ${SHOW + 1}위 이후 ${rows.length - SHOW}명 더 보기`);
+      btn.addEventListener("click", () => { boardOpen = !boardOpen; renderBoard(); });
+      wrap.append(btn);
+    }
   }
   $("#board-refresh").addEventListener("click", (e) => {
     const b = e.currentTarget;
@@ -476,6 +498,15 @@
     if (msg.type === "magam:submit") {
       const result = await handleSubmit(msg);
       frame.contentWindow.postMessage({ type: "magam:submit-result", ...result }, "*");
+    } else if (msg.type === "magam:gameover") {
+      // 게임오버 직후: 이 기록보다 앞선 사람 수를 알려 줍니다. 실패하면 아무것도 보내지 않아요.
+      const score = Number(msg.score);
+      if (Number.isFinite(score) && store.ahead) {
+        try {
+          const ahead = await store.ahead(score);
+          frame.contentWindow.postMessage({ type: "magam:rank", score, ahead }, "*");
+        } catch { /* 표시 없이 넘어감 */ }
+      }
     } else if (msg.type === "magam:share") {
       // 통계용 훅. 분석 도구를 붙이면 여기서 기록하세요. 응답은 필요 없어요.
       document.dispatchEvent(new CustomEvent("magam:share", { detail: { kind: msg.kind, score: msg.score, character: msg.character } }));

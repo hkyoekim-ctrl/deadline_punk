@@ -137,6 +137,7 @@ input:focus{border-color:var(--yellow)}
     <div class="big">마감펑크!</div>
     <div class="scoreline">마감으로부터 <b id="oScore">0m</b> 도망쳤다.</div>
     <div class="best" id="oBest"></div>
+    <div class="best" id="oRank" style="margin-top:.2em"></div>
     <form id="fSubmit" autocomplete="off">
       <div class="frow">
         <input id="iName" maxlength="12" placeholder="닉네임 (12자)" enterkeyhint="next">
@@ -170,7 +171,8 @@ input:focus{border-color:var(--yellow)}
                   {type:"magam:gameover", score, distance, durationMs}
                   {type:"magam:submit", name, message, character, score, distance, durationMs}
                   {type:"magam:share", kind:"image"|"link", score, character}   (통계용, 응답 불필요)
-     부모 → 게임: {type:"magam:submit-result", ok:true, rank}
+     부모 → 게임: {type:"magam:rank", score, ahead}   (선택: gameover 직후 "내 앞에 ahead명" 표시. ahead = 이 기록보다 높은 사람 수)
+                  {type:"magam:submit-result", ok:true, rank}
                   {type:"magam:submit-result", ok:false, error:"사용자에게 보여줄 문구"}
                   {type:"magam:pause"}  {type:"magam:mute", muted:true|false}
                   {type:"magam:config", shareUrl:"https://..."}  (공유 링크 주소, 없으면 상위 페이지 주소)
@@ -179,6 +181,8 @@ input:focus{border-color:var(--yellow)}
 
 const W = 320, H = 180, GROUND = 150, PX = 80;  // 시안 규격: 바닥 y=150, 주인공 x=80
 const GRAV = 1150, JUMP_V = -365, MAX_SPEED = 300, START_SPEED = 120;
+const LATE_FROM = 13000, LATE_SPAN = 3000, LATE_SPEED = 0.35, LATE_DENSE = 0.3;  // 13km부터 3km에 걸쳐 속도 +35% · 장애물 간격 -30% (한계에 달해 자연스럽게 끝나도록)
+const lateU = () => Math.max(0, Math.min(1, (score() - LATE_FROM) / LATE_SPAN));
 const GAP_MAX = 58, GAP_REGEN = 3, HIT_COST = 22, COFFEE_GAIN = 22;
 const FEVER_NOTES = 30, FEVER_TIME = 5, SWING_TIME = 6, SWING_PTS = 50;
 const NOTE_PTS = 5, COFFEE_PTS = 20, DIST_PER_PT = 8;
@@ -709,6 +713,7 @@ function gameOver() {
   const isBest = s > best;
   if (isBest) { best = s; store.set('best', best); }
   $('oScore').textContent = fmtDist(s);
+  $('oRank').textContent = '';
   $('oBest').textContent = isBest ? '★ 개인 최고기록 갱신!' : '개인 최고 ' + fmtDist(best);
   $('iName').value = store.get('name', '');
   $('iCheer').value = store.get('cheer', '');
@@ -756,6 +761,11 @@ addEventListener('message', e => {
     const msg = $('oMsg');
     if (d.ok) { msg.className = 'msg'; msg.textContent = d.rank ? `등록 완료! 현재 ${d.rank}위` : '등록 완료!'; }
     else { msg.className = 'msg err'; msg.textContent = d.error || '등록에 실패했어요.'; setFormLock(false); }
+  } else if (d.type === 'magam:rank') {  // 게임오버 직후 순위 안내: ahead = 이 기록보다 높은 사람 수
+    const a = Math.floor(Number(d.ahead));
+    if (state === 'over' && Number.isFinite(a) && a >= 0 && (d.score == null || d.score === score())) {
+      $('oRank').textContent = a === 0 ? '지금 1등! 내 앞엔 아무도 없다 🏁' : `내 앞에 ${a.toLocaleString('ko-KR')}명이 달리고 있다…`;
+    }
   } else if (d.type === 'magam:config') {
     if (typeof d.shareUrl === 'string' && /^https?:\/\//.test(d.shareUrl)) shareUrlFromParent = d.shareUrl;
   } else if (d.type === 'magam:pause') {
@@ -785,26 +795,69 @@ async function makeCard() {
   const F = n => `${n}px "Mulmaru", system-ui, sans-serif`;
   const s = score(), name = cleanText($('iName').value, NAME_MAX), cheer = cleanText($('iCheer').value, CHEER_MAX);
   const ch = CHARS.find(k => k.id === curChar) || CHARS[0];
+  const W_END = s >= WHITE_FULL;   // 12.5km 이상: 하얀 엔딩 카드
+  const stormSheets = [];
+  const paper = (cx, cy, w, h, rot, col) => { x.save(); x.translate(Math.round(cx), Math.round(cy)); x.rotate(rot); x.scale(0.45 + 0.55 * Math.abs(Math.cos(rot * 1.7)), 1);
+    x.fillStyle = '#2a1f3d'; x.fillRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8); x.fillStyle = col; x.fillRect(-w / 2, -h / 2, w, h);
+    x.fillStyle = 'rgba(60,60,90,0.4)'; for (let yy = -h / 2 + 10; yy < h / 2 - 4; yy += 10) x.fillRect(-w / 2 + 6, yy, w - 12, 3); x.restore(); };
   const PINK = '#ff3d7f', GOLD = '#ffd23f', INK = '#0c0818', CREAM = '#f7f1e3', LAV = '#a99cc8';
   const R = (px, py, w, h, col) => { x.fillStyle = col; x.fillRect(px, py, w, h); };
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  // 배경: 끊김 없는 세로 그라데이션 + 별 + 이어지는 도시 실루엣
-  const gr = x.createLinearGradient(0, 0, 0, CH); gr.addColorStop(0, '#110c1c'); gr.addColorStop(0.55, '#1a1230'); gr.addColorStop(0.85, '#2b1a46'); gr.addColorStop(1, '#3a1d4e');
-  x.fillStyle = gr; x.fillRect(0, 0, CW, CH);
-  const glow = x.createRadialGradient(CW / 2, 1180, 20, CW / 2, 1180, 620); glow.addColorStop(0, 'rgba(255,61,127,0.28)'); glow.addColorStop(1, 'rgba(255,61,127,0)');
-  x.fillStyle = glow; x.fillRect(0, 700, CW, 650);
-  for (let i = 0; i < 90; i++) { const sx = Math.floor(rnd() * 90) * 12, sy = Math.floor(rnd() * 70) * 12, big = rnd() > 0.85; if ((sy < 280 && sx > 280 && sx < 800) || (sy >= 280 && sy < 980 && sx > 60 && sx < 1020)) continue; R(sx, sy, big ? 12 : 6, big ? 12 : 6, big ? '#ffffff' : '#6b5c99'); }
-  const skyline = (minTop, maxTop, body, edge, litChance) => { let bxx = -6; while (bxx < CW) { const bw = 54 + Math.floor(rnd() * 5) * 12, top = minTop + Math.floor(rnd() * ((maxTop - minTop) / 12)) * 12; R(bxx, top, bw, CH - top, body); R(bxx, top, bw, 6, edge);
-    for (let wy = top + 24; wy < CH - 40; wy += 30) for (let wx = bxx + 12; wx < bxx + bw - 12; wx += 18) if (rnd() < litChance) R(wx, wy, 6, 12, rnd() > 0.5 ? '#ffd23f' : '#ff3d7f');
-    bxx += bw + 6; } };
-  skyline(1020, 1140, '#1d1436', '#2f2257', 0.16);
-  skyline(1170, 1270, '#120c20', '#241a40', 0.10);
+  // 배경: 기록을 세운 마지막 스테이지의 배경 (이미지가 없으면 예전 도시 배경)
+  const stg = (typeof g !== 'undefined' && g && g.stage) || 0, IM = ART.img, pk = k => stg === 0 ? IM[k] : IM[`s${stg}_${k}`];
+  const bSky = pk('sky'), bFar = pk('far'), bNear = pk('near'), bGnd = pk('ground');
+  const stageBg = !!(bSky && bNear && bGnd);
+  if (W_END) {
+    const wg = x.createLinearGradient(0, 0, 0, CH); wg.addColorStop(0, '#ffffff'); wg.addColorStop(0.7, '#fbf9ff'); wg.addColorStop(1, '#ece6f7');
+    x.fillStyle = wg; x.fillRect(0, 0, CW, CH);
+    // 마감 러시 종이 폭풍: 오른쪽 아래 마감 시계에서 왼쪽 위로 몰아치는 종이들 + 바람줄기
+    x.fillStyle = 'rgba(120,190,255,0.16)'; for (let i = 0; i < 26; i++) { const wy = 40 + Math.floor(rnd() * 120) * 10, wx = Math.floor(rnd() * 900), wl = 60 + Math.floor(rnd() * 5) * 36; x.fillRect(wx, wy, wl, 6); }
+    x.fillStyle = 'rgba(60,60,90,0.25)';
+    for (let i = 0; i < 380; i++) {
+      const tt = rnd(), cx = 960 - tt * 940 + (rnd() - 0.5) * 260, cy = 1050 - tt * 1000 + (rnd() - 0.5) * 520, sc = 0.55 + rnd() * 1.0, rot = rnd() * 6.28;
+      if (cx > 280 && cx < 800 && cy > 50 && cy < 270) continue;   // 머리글 글씨 가리지 않게
+      if (cx > 380 && cx < 700 && cy > 1110 && cy < 1280) continue;   // 로고 자리
+      stormSheets.push([cx, cy, 44 * sc, 54 * sc, rot, rnd() < 0.3 ? '#ffe9a8' : '#f7f1e3']);
+    }
+    stormSheets.forEach(a => paper(...a));
+    if (ART.ok) {   // 마감 시계들도 종이처럼 몰아침 (회전·크기 제각각, 내용물 뒤)
+      x.imageSmoothingEnabled = false;
+      [[150, 135, 4, -0.5], [935, 150, 4, 0.6], [875, 262, 3, -0.3], [48, 310, 3, 0.7], [236, 262, 3, 0.4],
+       [1000, 585, 3, 0.3], [70, 625, 3, -0.5], [530, 612, 3, 0.2], [1005, 790, 4, 0.5],
+       [90, 1140, 4, -0.6], [215, 1235, 3, 0.4], [55, 1020, 3, 0.9], [1005, 1215, 3, 0.5], [330, 1240, 3, -0.3]].forEach((c, i) => {
+        const cf = ART.atlas.frames[i % 2 ? 'deadline2' : 'deadline1'], sc = c[2];
+        x.save(); x.translate(c[0], c[1]); x.rotate(c[3]); x.drawImage(ART.img.sheet, cf.x, cf.y, cf.w, cf.h, -cf.w * sc / 2, -cf.h * sc / 2, cf.w * sc, cf.h * sc); x.restore(); });
+    }
+  } else if (stageBg) {
+    const o = document.createElement('canvas'); o.width = 320; o.height = 180; const ox = o.getContext('2d'); ox.imageSmoothingEnabled = false;
+    const off = stg === 0 ? 0 : 150;
+    ox.drawImage(bSky, 0, 0);
+    if (bFar) ox.drawImage(bFar, -Math.round(off * 0.375), 0);
+    ox.drawImage(bNear, -off, 0);
+    const gw = bGnd.width, go = off % gw; for (let gx = -go; gx < 320; gx += gw) ox.drawImage(bGnd, gx, 150);
+    x.drawImage(o, -660, 0, 2400, 1350);   // 7.5배, 가운데 144칸만 보이게
+    const sh = x.createLinearGradient(0, 0, 0, CH); sh.addColorStop(0, 'rgba(10,6,24,0.45)'); sh.addColorStop(0.5, 'rgba(10,6,24,0.30)'); sh.addColorStop(1, 'rgba(10,6,24,0.62)');
+    x.fillStyle = sh; x.fillRect(0, 0, CW, CH);
+  } else {
+    // 배경: 끊김 없는 세로 그라데이션 + 별 + 이어지는 도시 실루엣
+    const gr = x.createLinearGradient(0, 0, 0, CH); gr.addColorStop(0, '#110c1c'); gr.addColorStop(0.55, '#1a1230'); gr.addColorStop(0.85, '#2b1a46'); gr.addColorStop(1, '#3a1d4e');
+    x.fillStyle = gr; x.fillRect(0, 0, CW, CH);
+    const glow = x.createRadialGradient(CW / 2, 1180, 20, CW / 2, 1180, 620); glow.addColorStop(0, 'rgba(255,61,127,0.28)'); glow.addColorStop(1, 'rgba(255,61,127,0)');
+    x.fillStyle = glow; x.fillRect(0, 700, CW, 650);
+    for (let i = 0; i < 90; i++) { const sx = Math.floor(rnd() * 90) * 12, sy = Math.floor(rnd() * 70) * 12, big = rnd() > 0.85; if ((sy < 280 && sx > 280 && sx < 800) || (sy >= 280 && sy < 980 && sx > 60 && sx < 1020)) continue; R(sx, sy, big ? 12 : 6, big ? 12 : 6, big ? '#ffffff' : '#6b5c99'); }
+    const skyline = (minTop, maxTop, body, edge, litChance) => { let bxx = -6; while (bxx < CW) { const bw = 54 + Math.floor(rnd() * 5) * 12, top = minTop + Math.floor(rnd() * ((maxTop - minTop) / 12)) * 12; R(bxx, top, bw, CH - top, body); R(bxx, top, bw, 6, edge);
+      for (let wy = top + 24; wy < CH - 40; wy += 30) for (let wx = bxx + 12; wx < bxx + bw - 12; wx += 18) if (rnd() < litChance) R(wx, wy, 6, 12, rnd() > 0.5 ? '#ffd23f' : '#ff3d7f');
+      bxx += bw + 6; } };
+    skyline(1020, 1140, '#1d1436', '#2f2257', 0.16);
+    skyline(1170, 1270, '#120c20', '#241a40', 0.10);
+  }
   // 테두리: 분홍 두 겹 + 노란 점선 + 모서리 장식
-  R(0, 0, CW, 12, PINK); R(0, CH - 12, CW, 12, PINK); R(0, 0, 12, CH, PINK); R(CW - 12, 0, 12, CH, PINK);
-  R(12, 12, CW - 24, 6, '#8f1f4d'); R(12, CH - 18, CW - 24, 6, '#8f1f4d'); R(12, 12, 6, CH - 24, '#8f1f4d'); R(CW - 18, 12, 6, CH - 24, '#8f1f4d');
-  x.fillStyle = GOLD; for (let i = 36; i < CW - 36; i += 24) { x.fillRect(i, 28, 12, 6); x.fillRect(i, CH - 34, 12, 6); }
+  const FR1 = W_END ? '#ffc933' : PINK, FR2 = W_END ? '#b07d10' : '#8f1f4d', DASHC = W_END ? '#c99410' : GOLD;   // 장기 기록 카드는 금색 테두리
+  R(0, 0, CW, 12, FR1); R(0, CH - 12, CW, 12, FR1); R(0, 0, 12, CH, FR1); R(CW - 12, 0, 12, CH, FR1);
+  R(12, 12, CW - 24, 6, FR2); R(12, CH - 18, CW - 24, 6, FR2); R(12, 12, 6, CH - 24, FR2); R(CW - 18, 12, 6, CH - 24, FR2);
+  x.fillStyle = DASHC; for (let i = 36; i < CW - 36; i += 24) { x.fillRect(i, 28, 12, 6); x.fillRect(i, CH - 34, 12, 6); }
   for (let i = 36; i < CH - 36; i += 24) { x.fillRect(28, i, 6, 12); x.fillRect(CW - 34, i, 6, 12); }
-  for (const [cx0, cy0, dx, dy] of [[40, 40, 1, 1], [CW - 40, 40, -1, 1], [40, CH - 40, 1, -1], [CW - 40, CH - 40, -1, -1]]) { R(cx0 - (dx < 0 ? 36 : 0), cy0 - (dy < 0 ? 6 : 0), 36, 6, PINK); R(cx0 - (dx < 0 ? 6 : 0), cy0 - (dy < 0 ? 36 : 0), 6, 36, PINK); }
+  for (const [cx0, cy0, dx, dy] of [[40, 40, 1, 1], [CW - 40, 40, -1, 1], [40, CH - 40, 1, -1], [CW - 40, CH - 40, -1, -1]]) { R(cx0 - (dx < 0 ? 36 : 0), cy0 - (dy < 0 ? 6 : 0), 36, 6, FR1); R(cx0 - (dx < 0 ? 6 : 0), cy0 - (dy < 0 ? 36 : 0), 6, 36, FR1); }
   x.textBaseline = 'alphabetic';
   const fit = (str, size, maxW) => { x.font = F(size); while (size > 28 && x.measureText(str).width > maxW) { size -= 2; x.font = F(size); } return size; };
   const bolt = (bx2, by2, sc, col) => { x.fillStyle = col; x.beginPath(); x.moveTo(bx2 + 20 * sc, by2); x.lineTo(bx2, by2 + 34 * sc); x.lineTo(bx2 + 14 * sc, by2 + 34 * sc); x.lineTo(bx2 + 4 * sc, by2 + 66 * sc); x.lineTo(bx2 + 34 * sc, by2 + 24 * sc); x.lineTo(bx2 + 18 * sc, by2 + 24 * sc); x.closePath(); x.fill(); };
@@ -814,18 +867,19 @@ async function makeCard() {
   const nm = `${name || '익명의 작가'}`, tail = ' 님의 기록';
   const hs = fit(nm + tail, 76, 880); x.font = F(hs);
   const tw1 = x.measureText(nm).width, tw2 = x.measureText(tail).width, hx = CW / 2 - (tw1 + tw2) / 2;
-  x.textAlign = 'left'; x.fillStyle = '#05030b'; x.fillText(nm, hx + 5, 213 + 5); x.fillText(tail, hx + tw1 + 5, 213 + 5);
-  x.fillStyle = GOLD; x.fillText(nm, hx, 213); x.fillStyle = CREAM; x.fillText(tail, hx + tw1, 213);
+  x.textAlign = 'left'; if (!W_END) { x.fillStyle = '#05030b'; x.fillText(nm, hx + 5, 213 + 5); x.fillText(tail, hx + tw1 + 5, 213 + 5); }
+  if (W_END) { x.fillStyle = '#ffc9dc'; x.fillText(nm, hx + 5, 213 + 5); x.fillText(tail, hx + tw1 + 5, 213 + 5); x.fillStyle = '#2a1f3d'; x.fillText(nm, hx, 213); x.fillStyle = '#6b5c99'; x.fillText(tail, hx + tw1, 213); } else { x.fillStyle = GOLD; x.fillText(nm, hx, 213); x.fillStyle = CREAM; x.fillText(tail, hx + tw1, 213); }
   // 2) 점수: 크게
   const sx0 = 72, sy0 = 296, sw0 = 936, sh0 = 300;
-  R(sx0 + 10, sy0 + 10, sw0, sh0, '#05030b'); R(sx0, sy0, sw0, sh0, INK);
-  R(sx0, sy0, sw0, 8, PINK); R(sx0, sy0 + sh0 - 8, sw0, 8, PINK); R(sx0, sy0, 8, sh0, PINK); R(sx0 + sw0 - 8, sy0, 8, sh0, PINK);
-  R(sx0 + 20, sy0 + 20, sw0 - 40, 3, '#3a2a5c'); R(sx0 + 20, sy0 + sh0 - 23, sw0 - 40, 3, '#3a2a5c');
+  const PLF = W_END ? '#8f1d2f' : INK, PLB = W_END ? '#ffc933' : PINK, PLL = W_END ? '#c4505f' : '#3a2a5c', PLS = W_END ? 'rgba(90,50,10,0.35)' : '#05030b', PLK = W_END ? '#4d0c18' : INK;   // 하얀 엔딩 카드는 시계빛 붉은 점수판 + 금테
+  R(sx0 + 10, sy0 + 10, sw0, sh0, PLS); R(sx0, sy0, sw0, sh0, PLF);
+  R(sx0, sy0, sw0, 8, PLB); R(sx0, sy0 + sh0 - 8, sw0, 8, PLB); R(sx0, sy0, 8, sh0, PLB); R(sx0 + sw0 - 8, sy0, 8, sh0, PLB);
+  R(sx0 + 20, sy0 + 20, sw0 - 40, 3, PLL); R(sx0 + 20, sy0 + sh0 - 23, sw0 - 40, 3, PLL);
   bolt(sx0 + 36, sy0 + 110, 1.1, GOLD); bolt(sx0 + sw0 - 74, sy0 + 110, 1.1, GOLD);
   const sTxt = fmtDist(s), ss = fit(sTxt, 240, sw0 - 260); x.font = F(ss); x.textAlign = 'center';
   const sy = sy0 + sh0 / 2 + ss * 0.34;
-  x.lineJoin = 'round'; x.lineWidth = 22; x.strokeStyle = '#8f1f4d'; x.strokeText(sTxt, CW / 2 + 10, sy + 10);
-  x.lineWidth = 18; x.strokeStyle = INK; x.strokeText(sTxt, CW / 2, sy);
+  x.lineJoin = 'round'; x.lineWidth = 22; x.strokeStyle = W_END ? '#2e0710' : '#8f1f4d'; x.strokeText(sTxt, CW / 2 + 10, sy + 10);
+  x.lineWidth = 18; x.strokeStyle = PLK; x.strokeText(sTxt, CW / 2, sy);
   x.fillStyle = GOLD; x.fillText(sTxt, CW / 2, sy);
   // 3) 캐릭터 + 한마디 말풍선
   const fr = ART.ok && ART.atlas.frames[ch.id + '_portrait'];
@@ -848,16 +902,32 @@ async function makeCard() {
     x.font = F(40); x.fillStyle = '#1a1423'; const t0 = byy + (bh - lines.length * 56) / 2 + 44; lines.forEach((l, i) => x.fillText(l, bxx2 + 38, t0 + i * 56));
     R(bxx2 + bw - 52, byy + bh - 30, 12, 12, PINK); R(bxx2 + bw - 36, byy + bh - 30, 12, 12, GOLD);
   }
+  if (W_END) {   // 하얀 엔딩: 마감 시계가 캐릭터에게 답하는 말풍선 (위 대화와 마주 보게 오른쪽에 시계, 말풍선 꼬리는 시계 쪽)
+    const RED = '#e63946', bx0 = 96, by0 = 962, bw0 = 636, bh0 = 132;   // 바깥 테두리(-12)가 프로필 왼쪽 끝(84)과 맞음
+    const bbox = (bx, by, w, h, col) => { R(bx + 12, by, w - 24, h, col); R(bx, by + 12, w, h - 24, col); R(bx + 6, by + 6, w - 12, h - 12, col); };
+    const ty0 = by0 + bh0 / 2, rtail = (g, col) => { for (let j = -3; j <= 3; j++) { const w = (4 - Math.abs(j)) * 9 + g; R(bx0 + bw0 - 8, ty0 + j * 9 - 5 - g, w + 8 + 0, 10 + g * 2, col); } };
+    bbox(bx0 - 12 + 10, by0 - 12 + 12, bw0 + 24, bh0 + 24, 'rgba(0,0,0,0.20)');
+    bbox(bx0 - 12, by0 - 12, bw0 + 24, bh0 + 24, INK); rtail(12, INK);
+    bbox(bx0 - 6, by0 - 6, bw0 + 12, bh0 + 12, RED); rtail(6, RED);
+    bbox(bx0, by0, bw0, bh0, '#fff8ec'); rtail(0, '#fff8ec');
+    R(bx0 + 14, by0 + 6, bw0 - 28, 6, '#ffffff'); R(bx0 + 14, by0 + bh0 - 14, bw0 - 28, 8, '#f0e2c8');
+    x.textAlign = 'center'; x.font = F(50); x.fillStyle = '#1a1423';
+    x.fillText('이럴 시간에', bx0 + bw0 / 2, by0 + 58); x.fillText('마감을 했더라면...', bx0 + bw0 / 2, by0 + 114);
+    R(bx0 + 24, by0 + bh0 - 30, 12, 12, RED); R(bx0 + 40, by0 + bh0 - 30, 12, 12, GOLD);
+    const cf = ART.ok && ART.atlas.frames.deadline1;
+    if (cf) { x.imageSmoothingEnabled = false; x.drawImage(ART.img.sheet, cf.x, cf.y, cf.w, cf.h, 806, 958, cf.w * 6, cf.h * 6); }
+  }
   // 4) 하단: 마감펑크 로고(작게)
   if (ART.logo) {
-    const lh = 210, lw = Math.round(lh * ART.logo.width / ART.logo.height), lx = Math.round((CW - lw) / 2), ly = 1030;
+    const lh = W_END ? 140 : 210, lw = Math.round(lh * ART.logo.width / ART.logo.height), lx = Math.round((CW - lw) / 2), ly = W_END ? 1146 : 1030;
     x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
-    x.save(); x.shadowColor = 'rgba(255,61,127,0.95)'; x.shadowBlur = 36; x.drawImage(ART.logo, lx, ly, lw, lh); x.shadowBlur = 16; x.drawImage(ART.logo, lx, ly, lw, lh); x.restore();
-    x.drawImage(ART.logo, lx, ly, lw, lh);
+    let lgSrc = ART.logo; if (W_END) { lgSrc = document.createElement('canvas'); lgSrc.width = ART.logo.width; lgSrc.height = ART.logo.height; const tx = lgSrc.getContext('2d'); tx.drawImage(ART.logo, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = '#2a1f3d'; tx.fillRect(0, 0, lgSrc.width, lgSrc.height); }
+    x.save(); x.shadowColor = 'rgba(255,61,127,0.95)'; x.shadowBlur = 36; x.drawImage(lgSrc, lx, ly, lw, lh); x.shadowBlur = 16; x.drawImage(lgSrc, lx, ly, lw, lh); x.restore();
+    x.drawImage(lgSrc, lx, ly, lw, lh);
     x.imageSmoothingEnabled = false;
   }
-  R(44, 1276, CW - 88, 28, 'rgba(8,5,14,0.85)');
-  x.textAlign = 'center'; x.font = F(16); x.fillStyle = '#9d92c0'; x.fillText('© 2026 불과사이. All rights reserved.', CW / 2, 1296);
+  if (!W_END) R(44, 1276, CW - 88, 28, 'rgba(8,5,14,0.85)');
+  x.textAlign = 'center'; x.font = F(16); x.fillStyle = W_END ? '#7d72a0' : '#9d92c0'; x.fillText('© 2026 불과사이. All rights reserved.', CW / 2, W_END ? 1308 : 1296);
   return new Promise(res => c.toBlob(b => res(b), 'image/png'));
 }
 function wrapText(x, t, maxW) {
@@ -960,7 +1030,9 @@ function spawnObstacle() {
   const s = g.speed;
   const ramp = Math.max(0.6, 1 - Math.max(0, g.t - 50) / 200);          // 3 · 50초부터 서서히 빽빽해져 110초쯤 최대
   const rushF = g.rush && g.rush.phase === 'on' ? 0.6 : 1;                // 4 · 러시 중엔 장애물이 연달아
-  g.nextObs = g.dist + w + (s * rnd(0.72, 1.35) * ramp + rnd(40, 90) - Math.min(30, g.t * 0.4)) * rushF;
+  const late = lateU();
+  const gapPx = (s * rnd(0.72, 1.35) * ramp * (1 - LATE_DENSE * late) + rnd(40, 90) - Math.min(30, g.t * 0.4)) * rushF;
+  g.nextObs = g.dist + w + Math.max(gapPx, s * 0.45);  // 아무리 빽빽해도 연속 점프로는 넘을 수 있는 최소 간격
 }
 
 /* ---------------- 업데이트 ---------------- */
@@ -1001,7 +1073,7 @@ function updateRush(dt) {  // 40초마다 '마감 러시': 안내(3단 점프로
 }
 function update(dt) {
   g.t += dt;
-  g.speed = Math.min(MAX_SPEED, START_SPEED + g.t * 3.1);
+  g.speed = Math.min(MAX_SPEED, START_SPEED + g.t * 3.1) * (1 + LATE_SPEED * lateU());
   if (g.boost > 0) {  // 아아 부스트: 속도 ×1.4, 마감 게이지 초당 +4
     g.boost -= dt; g.gap = Math.min(GAP_MAX + 10, g.gap + BOOST_GAP * dt);
     if (Math.random() < 0.6) g.parts.push({ x: rnd(PX + 20, W), y: rnd(40, GROUND - 4), vx: -420, vy: 0, life: 0.18, c: '#f7f1e3', s: 1 });

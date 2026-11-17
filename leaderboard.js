@@ -42,6 +42,10 @@
       async top() {
         return read().sort((a, b) => b.score - a.score).slice(0, size);
       },
+      // 이 점수보다 높은 기록 수(한 사람이 여러 번 올리면 여러 순위로 셉니다)
+      async ahead(score) {
+        return read().filter((r) => r.score > score).length;
+      },
       async recent(n) {
         return read().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, n);
       },
@@ -65,6 +69,11 @@
         const res = await fetch(`${base}/scores?select=name,message,score,distance,character,created_at&order=score.desc,created_at.asc&limit=${size}`, { headers });
         if (!res.ok) throw new Error("load_failed");
         return res.json();
+      },
+      async ahead(score) {
+        const res = await fetch(`${base}/scores?select=name&score=gt.${Math.floor(score)}&limit=1000`, { headers });
+        if (!res.ok) throw new Error("load_failed");
+        return (await res.json()).length;
       },
       async recent(n) {
         const res = await fetch(`${base}/scores?select=name,message,score,distance,character,created_at&order=created_at.desc&limit=${n}`, { headers });

@@ -272,7 +272,7 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .stream-tile[aria-disabled="true"] { cursor: default; }
 .stream-note { text-align: center; color: var(--muted); font-size: var(--step--1); margin: 28px 0 0; }
 #listen .mv { max-width: 880px; margin: 40px auto 0; }
-#listen h2, #listen .kicker, #listen .credits { text-align: center; }
+#listen .credits { text-align: center; }
 @media (prefers-reduced-motion: reduce) { .stream-tile { transition: none; } }
 
 /* 후원: 계좌 하나 */
@@ -601,3 +601,29 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .support-card.account .btn { background: var(--ink); color: var(--paper); box-shadow: 3px 3px 0 var(--overdue); }
 .support-grid { justify-items: start; }
 .support-card.account { width: fit-content; max-width: 100%; padding: 14px 20px 16px; gap: 8px; }
+
+/* 전광판: 1위 이름·기록 ↔ 한줄 메시지 번갈아 */
+.led-row { display: grid; place-items: center; }
+.led-row .led-view { grid-area: 1 / 1; width: 100%; display: flex; justify-content: center; }
+.led-row.alt .led-view:nth-child(1) { animation: led-a 9s ease-in-out infinite; }
+.led-row.alt .led-view:nth-child(2) { animation: led-b 9s ease-in-out infinite; }
+@keyframes led-a { 0%, 42% { opacity: 1; } 50%, 92% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes led-b { 0%, 42% { opacity: 0; } 50%, 92% { opacity: 1; } 100% { opacity: 0; } }
+.led-msg { font-size: clamp(16px, 2.6vw, 21px); line-height: 1.35; color: #ffe9a8; overflow-wrap: anywhere; text-align: center; }
+
+/* 순위표: 10위까지 기본, 이후 접기 */
+.board tr.more { display: none; }
+.board.open tr.more { display: table-row; }
+.board-more { display: block; width: 100%; padding: 10px; background: transparent; border: 0; border-top: 1px dashed var(--line); color: var(--paper); font-family: var(--f-pixel); font-size: 0.95rem; cursor: pointer; }
+.board-more:hover { color: var(--postit); }
+
+/* 음원·MV 공개 전 안내 */
+.listen-soon { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 28px auto 0; padding: 26px 16px; max-width: 560px; border: 2px dashed var(--line); text-align: center; color: var(--muted); }
+.listen-soon b { font-family: var(--f-display); font-weight: 400; font-size: clamp(20px, 5vw, 28px); color: var(--postit); letter-spacing: 0.04em; }
+.listen-soon span { font-size: var(--step-0, 1rem); }
+
+
+/* 밴드 소개 상단: 위아래 여백 균형 */
+#band { padding-top: 26px; }
+.band-top { margin-bottom: 30px; }
+@media (max-width: 640px) { #band { padding-top: 24px; } .band-top { margin-bottom: 28px; } }
