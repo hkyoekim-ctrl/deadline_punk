@@ -316,7 +316,7 @@ const ART = { ok: false, img: {}, atlas: null };
   const files = { sheet: 'assets/spritesheet.png', sky: 'assets/bg_sky.png', far: 'assets/bg_far.png', near: 'assets/bg_near.png', ground: 'assets/bg_ground.png' };
   const jobs = Object.entries(files).map(([k, src]) => new Promise((res, rej) => { const im = new Image(); im.onload = () => { ART.img[k] = im; res(); }; im.onerror = rej; im.src = src; }));
   jobs.push(new Promise(res => { const im = new Image(); im.onload = () => { ART.logo = im; res(); }; im.onerror = res; im.src = 'assets/title-logo.png'; }));
-  ['suburb', 'weird', 'weirder'].forEach((n, i) => ['sky', 'far', 'near', 'ground'].forEach(k => {
+  ['suburb', 'weird', 'weirder', 'clockwork', 'glitch', 'room'].forEach((n, i) => ['sky', 'far', 'near', 'ground'].forEach(k => {
     const im = new Image(); im.onload = () => { ART.img[`s${i + 1}_${k}`] = im; }; im.src = `assets/bg_${n}_${k}.png`;
   }));
   jobs.push(fetch('assets/atlas.json').then(r => r.json()).then(j => { ART.atlas = j; }));
@@ -549,7 +549,7 @@ function reset() {
 }
 reset();
 // 달릴수록 배경이 바뀜: 기록(m) 0 → 도시, 600 → 교외, 1500 → 웃긴 세계, 3000 → 점점 더 이상한 세계
-const STAGES = [{ from: 0, name: '야근 도시' }, { from: 1000, name: '한적한 교외' }, { from: 1500, name: '웃긴 세계' }, { from: 3000, name: '점점 더 이상한 세계' }];
+const STAGES = [{ from: 0, name: '야근 도시' }, { from: 1000, name: '한적한 교외' }, { from: 1500, name: '웃긴 세계' }, { from: 3000, name: '점점 더 이상한 세계' }, { from: 5000, name: '시계 세계' }, { from: 7000, name: '글리치 세계' }, { from: 9000, name: '작업실' }];
 const stageOf = m => { let i = 0; STAGES.forEach((st, k) => { if (m >= st.from) i = k; }); return i; };
 const stageReady = i => i === 0 || !!(ART.img[`s${i}_sky`] && ART.img[`s${i}_far`] && ART.img[`s${i}_near`] && ART.img[`s${i}_ground`]);
 // 큰 글씨 이펙트 (FEVER / ROCK / 콤보 이벤트 등)
@@ -1309,7 +1309,7 @@ function drawSign(t, c = ctx) {
     drawLED(c, sx, SIGN.y, t);
   }
 }
-const STAGE_SIGN = { 1: [106, 1106], 2: [66, 1146], 3: [44, 1168] };  // 단계 near 이미지에 그려진 전광판 x (y78, 68x22)
+const STAGE_SIGN = { 1: [106, 1106], 2: [66, 1146], 3: [44, 1168], 4: [100, 1112], 5: [100, 1112], 6: [100, 1112] };  // 단계 near 이미지에 그려진 전광판 x (y78, 68x22)
 function drawStageSign(c, st, t) {
   const xs = STAGE_SIGN[st], img = ART.img[`s${st}_near`]; if (!xs || !img) return;
   const o = Math.floor(g.scroll * 0.4) % img.width;
@@ -1863,41 +1863,6 @@ requestAnimationFrame(frame);
 
 // 디버그/테스트용 훅
 window.runFrameDbg = () => runFrame(runClock);
-// 테스트용 단계 점프 바 (?debug 또는 window.MAGAM_DEBUG 일 때만 보임)
-if (window.MAGAM_DEBUG || /[?&]debug/.test(location.search)) {
-  const bar = document.createElement('div');
-  bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:8px;background:rgba(10,6,18,.9);font:13px/1.2 Mulmaru,sans-serif;color:#f7f1e3';
-  bar.innerHTML = '<span id="dbgMsg" style="align-self:center">TEST · 게임 시작 후 눌러요 →</span>';
-  const names = ['도시 0m', '교외 1km', '사막 1.5km', '버섯숲 3km'];
-  STAGES.forEach((st, i) => {
-    const b = document.createElement('button'); b.type = 'button'; b.textContent = names[i] || st.name;
-    b.style.cssText = 'padding:8px 12px;border:2px solid #f7f1e3;background:#2a1b3d;color:#f7f1e3;font:inherit;border-radius:6px';
-    b.addEventListener('click', e => { e.currentTarget.blur(); if (state !== 'play') { $('dbgMsg').textContent = '먼저 게임을 시작해 주세요 (캐릭터 선택 후)'; return; } g.dist = st.from * DIST_PER_PT + 1; g.obs.length = 0; $('dbgMsg').textContent = names[i] + ' 으로 이동 (무적)'; });
-    bar.append(b);
-  });
-  const act = (label, fn) => {
-    const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
-    b.style.cssText = 'padding:8px 12px;border:2px solid #ffd23f;background:#3b2c55;color:#ffd23f;font:inherit;border-radius:6px';
-    b.addEventListener('click', e => { e.currentTarget.blur(); if (state !== 'play') { $('dbgMsg').textContent = '먼저 게임을 시작해 주세요 (캐릭터 선택 후)'; return; } fn(); $('dbgMsg').textContent = label; });
-    bar.append(b);
-  };
-  const X = W + 12;
-  act('콤보 이벤트', () => { g.combo = Math.max(g.combo, g.nextCombo - 1); addCombo(); });
-  act('FEVER', () => { g.fever = FEVER_TIME; g.notes = 0; bigFx('FEVER!', '1,2,3, 튀어!', '#ff3d7f', 2.0); sfx.coffee(); g.shake = 0.15; });
-  act('ROCK', () => { g.swing = SWING_TIME; g.swingT = 0; bigFx('ROCK!!', '음악의 힘으로 다 때려부수자!', '#ffd23f', 2.0); sfx.coffee(); g.shake = 0.12; });
-  act('BOOST', () => { g.boost = BOOST_TIME; g.boostPop = 1.2; sfx.coffee(); });
-  act('마감 러시', () => { g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits, drop: 0.5, n: 0 }; sfx.hit(); });
-  act('후반 난이도(70초)', () => { g.t = Math.max(g.t, 70); g.speed = MAX_SPEED; });
-  act('종이 폭풍', () => { g.storm = { t: STORM_TIME, acc: 0 }; });
-  act('에너지 드링크', () => g.items.push({ type: 'energy', x: X, y: GROUND - DRINK_Y - 86, ph: 0 }));
-  act('의자', () => g.obs.push({ type: 'chair', x: X, y: GROUND - 18, w: 16, h: 18 }));
-  act('빨간 펜', () => g.obs.push({ type: 'pen', x: X, y: GROUND - 23, w: 22, h: 7 }));
-  act('책더미', () => g.obs.push({ type: 'books', x: X, y: GROUND - 60, w: 22, h: 60 }));
-  act('아아', () => g.items.push({ type: 'americano', x: X, y: GROUND - 20, ph: 0 }));
-  act('맥주', () => g.items.push({ type: 'beer', x: X, y: GROUND - 20, ph: 0 }));
-  document.body.append(bar);
-  setInterval(() => { if (state === 'play') { g.gap = GAP_MAX; p.inv = 99; } }, 100);  // 무적: 테스트용
-}
 window.__led = w => ledPanel(w); window.__sign = SIGN; window.__seek = t => { if (bgmFailed) fakeT = t; else bgmEl.currentTime = t; }; window.__songTime = () => songTime();
 window.__magam = { get state() { return state; }, get score() { return score(); }, get g() { return g; }, get p() { return p; }, startGame };
 send({ type: 'magam:ready' });
