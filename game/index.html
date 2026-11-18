@@ -182,6 +182,8 @@ input:focus{border-color:var(--yellow)}
 const W = 320, H = 180, GROUND = 150, PX = 80;  // 시안 규격: 바닥 y=150, 주인공 x=80
 const GRAV = 1150, JUMP_V = -365, MAX_SPEED = 300, START_SPEED = 120;
 const LATE_FROM = 13000, LATE_SPAN = 3000, LATE_SPEED = 0.35, LATE_DENSE = 0.3;  // 13km부터 3km에 걸쳐 속도 +35% · 장애물 간격 -30% (한계에 달해 자연스럽게 끝나도록)
+const CALL_FROM = 7000, CALL_GAP = [16, 24];
+const callTime = () => { const d = score(); return d < 8000 ? 4 : d < 9500 ? 5 : 6.5; };  // 7~8km 4초 · 8~9.5km 5초 · 이후 6.5초
 const lateU = () => Math.max(0, Math.min(1, (score() - LATE_FROM) / LATE_SPAN));
 const GAP_MAX = 58, GAP_REGEN = 3, HIT_COST = 22, COFFEE_GAIN = 22;
 const FEVER_NOTES = 30, FEVER_TIME = 5, SWING_TIME = 6, SWING_PTS = 50;
@@ -522,6 +524,14 @@ const sfx = {
   jump() { if (AC) tone(380, AC.currentTime, 0.12, 'square', 0.25, sfxBus, 760); },
   slide() { if (AC) noise(AC.currentTime, 0.15, 0.25, sfxBus, 2500); },
   note() { if (AC) { tone(1046, AC.currentTime, 0.06, 'square', 0.18, sfxBus); tone(1568, AC.currentTime + 0.05, 0.1, 'square', 0.18, sfxBus); } },
+  buzz() {  // 진동 '부우우웅~' : 낮은 톱니파를 빠르게 떨어서(AM) 0.55초
+    if (!AC) return; const t = AC.currentTime;
+    const o = AC.createOscillator(), m = AC.createGain(), lfo = AC.createOscillator(), lg = AC.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(92, t); o.frequency.linearRampToValueAtTime(84, t + 0.55);
+    m.gain.setValueAtTime(0.0001, t); m.gain.linearRampToValueAtTime(0.32, t + 0.04); m.gain.setValueAtTime(0.32, t + 0.46); m.gain.linearRampToValueAtTime(0.0001, t + 0.58);
+    lfo.type = 'square'; lfo.frequency.value = 34; lg.gain.value = 0.16; lfo.connect(lg); lg.connect(m.gain);
+    o.connect(m); m.connect(sfxBus); o.start(t); lfo.start(t); o.stop(t + 0.6); lfo.stop(t + 0.6);
+  },
   coffee() { if (AC) [523, 659, 784, 1046].forEach((f, i) => tone(f, AC.currentTime + i * 0.05, 0.1, 'triangle', 0.35, sfxBus)); },
   hit() { if (AC) { noise(AC.currentTime, 0.25, 0.6, sfxBus, 300); tone(200, AC.currentTime, 0.25, 'sawtooth', 0.3, sfxBus, 60); } },
   over() { if (AC) [392, 330, 262, 196].forEach((f, i) => tone(f, AC.currentTime + i * 0.12, 0.18, 'square', 0.3, sfxBus)); }
@@ -1088,6 +1098,13 @@ function update(dt) {
     if (g.stageMsg > 0) g.stageMsg -= dt; }
   if (g.rushMsg > 0) g.rushMsg -= dt;
   updateRush(dt);
+  { // 편집자 독촉 전화: 7km부터 가끔, 6.5초 동안 길목의 장애물이 가려졌다가 사라짐 (끌 수 없음)
+    if (g.call) { g.call.t += dt; if ((g.call.buzz -= dt) <= 0) { sfx.buzz(); g.call.buzz = 0.85; } if (g.call.t >= g.call.dur) { g.call = null; g.nextCall = g.t + rnd(CALL_GAP[0], CALL_GAP[1]); } }
+    else if (score() >= CALL_FROM && !g.rush && !g.storm) {
+      if (g.nextCall == null) g.nextCall = g.t + 3;
+      else if (g.t >= g.nextCall && g.t < g.nextRush - callTime() - 1) { g.call = { t: 0, buzz: 0, dur: callTime() }; }
+      else if (g.t >= g.nextCall) g.nextCall = g.nextRush + 2;
+    } }
   if (g.swing > 0) g.swing -= dt;
   if (g.shield > 0) g.shield -= dt;
   for (const q of g.sheets) { q.x -= q.vx * dt; q.y += q.vy * dt; q.rot += q.vr * dt; }
@@ -1845,7 +1862,34 @@ function drawBigFx(dt) {
   ktextOutlined(f.sub, W / 2, 104, '#f7f1e3', 10, '#1a1423');
   ctx.globalAlpha = 1;
 }
+function drawCall() {  // 독촉 전화: 오프닝의 폰처럼 세로로 크게, 길목의 장애물을 가림 (캐릭터는 왼쪽이라 보임)
+  const c = g.call; if (!c) return;
+  const fin = Math.min(1, c.t / 0.25), fout = Math.min(1, (c.dur - c.t) / 0.4), a = Math.min(fin, fout) * 0.95;
+  const sh = Math.floor(c.t * 30) % 2 ? 2 : -2, sv = Math.floor(c.t * 23) % 2 ? 1 : -1;
+  const w = 62, h = 126, x0 = 150 - w / 2 + sh, y0 = 22 + sv, cx = x0 + w / 2;
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#05030b'; ctx.fillRect(x0 - 3, y0 - 3, w + 6, h + 6);
+  ctx.fillStyle = '#1f3270'; ctx.fillRect(x0, y0, w, h);
+  ctx.fillStyle = '#142154'; ctx.fillRect(x0, y0 + h - 4, w, 4);
+  ctx.fillStyle = '#0a0f24'; ctx.fillRect(x0 + 5, y0 + 10, w - 10, h - 20);
+  ctx.fillStyle = '#0a0f24'; ctx.fillRect(cx - 8, y0 + 4, 16, 2);  // 스피커
+  const blink = Math.floor(c.t * 4) % 2;
+  ctx.fillStyle = '#2a1f3d'; ctx.fillRect(cx - 14, y0 + 24, 28, 28);  // 통화 상대 아이콘
+  ctx.fillStyle = '#f7f1e3'; ctx.fillRect(cx - 5, y0 + 29, 10, 10); ctx.fillRect(cx - 10, y0 + 41, 20, 8);
+  ktextOutlined('편집자', cx, y0 + 66, '#f7f1e3', 12, '#1a1423');
+  ktextOutlined(blink ? '통화 중' : '통화 중…', cx, y0 + 86, blink ? '#ff6b6b' : '#ffd23f', 9, '#1a1423');
+  // 오른쪽 말풍선: "작가님." / "계세요?" 번갈아
+  const line = Math.floor(c.t / 0.85) % 2 ? '계세요?' : '작가님.';
+  const bx = x0 + w + 9, bw = 56, bh = 30, by = y0 + 28;
+  ctx.fillStyle = '#05030b'; ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4);
+  ctx.fillStyle = '#f7f1e3'; ctx.fillRect(bx, by, bw, bh);
+  ctx.fillStyle = '#05030b'; ctx.fillRect(bx - 8, by + 8, 8, 8);
+  ctx.fillStyle = '#f7f1e3'; ctx.fillRect(bx - 6, by + 9, 7, 6);
+  ktextOutlined(line, bx + bw / 2, by + 11, '#1a1423', 11, '#f7f1e3');
+  ctx.globalAlpha = 1;
+}
 function drawCombo() {
+  drawCall();
   drawBigFx(Math.max(0, Math.min(1 / 30, (performance.now() - (drawCombo.last || performance.now())) / 1000))); drawCombo.last = performance.now();
   if (g.combo >= 3) {  // 왼쪽 위 기록 아래
     const pop = g.comboPop > 0 ? 1 + g.comboPop * 0.6 : 1;
