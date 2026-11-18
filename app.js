@@ -188,6 +188,34 @@
     if (Math.abs(dx) > 40 && photos.length > 1) showPhoto(lbIndex + (dx < 0 ? 1 : -1));
   });
 
+  // ── 기사·매거진 소식 ─────────────────────
+  (function press() {
+    const list = $("#press");
+    if (!list) return;
+    let src = (C.news && C.news.items) || [];
+    // 미리보기에서만: 모양 확인용 샘플 2건 (실제 사이트에는 나오지 않아요)
+    if (false) src = [
+      { date: "2026-11-25", source: "샘플 매거진", title: "[샘플] 작가들이 만든 펑크 밴드, 불과사이를 만나다", url: "https://example.com/1" },
+      { date: "2026-11-21", source: "샘플 뉴스", title: "[샘플] 마감을 피해 달리는 게임, 순위 경쟁 시작", url: "https://example.com/2" }
+    ];
+    const items = src.filter((n) => n && n.title && n.url && !isPlaceholder(n.url))
+      .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+    if (!items.length) {
+      list.append(el("li", { class: "press-none" }, "기사와 매거진 소식이 올라오면 여기에 링크돼요."));
+      return;
+    }
+    items.forEach((n) => {
+      const who = ["vocal", "guitar", "bass", "keys", "drums"].includes(n.character) ? n.character : null;
+      list.append(el("li", {}, el("a", { class: "press-item" + (who ? " has-char" : ""), href: n.url, target: "_blank", rel: "noopener" },
+        who ? el("span", { class: "press-char crew-sprite", style: `--sheet:url(img/runners/${who}.png)`, "aria-hidden": "true" }) : null,
+        el("span", { class: "press-meta" },
+          n.kind ? el("em", { class: "press-kind" + (n.kind !== "기사" ? " mem" : "") }, n.kind) : null,
+          [n.source, n.date ? String(n.date).replace(/-/g, ".") : ""].filter(Boolean).join(" · ")),
+        el("span", { class: "press-name" }, n.title),
+        el("span", { class: "press-go", "aria-hidden": "true" }, "↗"))));
+    });
+  })();
+
   // ── 공연 일정: 픽셀 캘린더 ─────────────────────
   (function schedule() {
     const list = $("#gigs");

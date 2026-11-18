@@ -590,8 +590,8 @@ function addCombo(n = 1) {
   g.combo += n; if (g.combo > g.maxCombo) g.maxCombo = g.combo; g.comboPop = 0.35;
   if (g.combo >= g.nextCombo) {  // 콤보 이벤트: 마감 게이지 회복 + 큰 글씨
     const hit = g.combo; g.nextCombo = nextMilestone(g.combo);
-    g.gap = Math.min(GAP_MAX + 10, g.gap + 12); g.shield = Math.max(g.shield, COMBO_SHIELD);
-    bigFx(`${hit} COMBO!`, '딱 한 번만 제게 기회를 주세요~', '#ff3d7f');
+    g.gap = Math.min(GAP_MAX + 10, g.gap + 12); if (!g.rush && !g.storm) g.shield = Math.max(g.shield, COMBO_SHIELD);  // 러시 중에는 콤보 보호막 없음(에너지 드링크 규칙 유지)
+    if (!g.rush) bigFx(`${hit} COMBO!`, '딱 한 번만 제게 기회를 주세요~', '#ff3d7f');
     sfx.coffee(); g.shake = 0.12; burst(PX + 6, GROUND - 14, 18, ['#ffd23f', '#ff3d7f', '#ffffff'], 110);
   }
 }
@@ -1081,6 +1081,7 @@ function updateRush(dt) {  // 40초마다 '마감 러시': 안내(3단 점프로
     if (g.t >= g.nextRush) {
       g.call = null; g.shotWarn = null;
       const hadWarp = !!g.warp;
+      g.shield = 0;  // 러시 시작 전에 남은 콤보 보호막 제거
       g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits, drop: 0.5, n: 0 };
       g.obs = g.obs.filter(o => o.x < PX - 40 || o.x > W);  // 화면 앞 장애물 정리
       bigFx('마감 러시!', hadWarp ? '반전 해제! 3단 점프로 에너지 드링크를!' : '3단 점프로 에너지 드링크를 먹어라!', '#ff6b6b', 2.0); sfx.hit();
