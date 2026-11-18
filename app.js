@@ -198,8 +198,7 @@
       { date: "2026-11-25", source: "샘플 매거진", title: "[샘플] 작가들이 만든 펑크 밴드, 불과사이를 만나다", url: "https://example.com/1" },
       { date: "2026-11-21", source: "샘플 뉴스", title: "[샘플] 마감을 피해 달리는 게임, 순위 경쟁 시작", url: "https://example.com/2" }
     ];
-    const items = src.filter((n) => n && n.title && n.url && !isPlaceholder(n.url))
-      .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+    const items = src.filter((n) => n && n.title && n.url && !isPlaceholder(n.url)); // 적은 순서 그대로
     if (!items.length) {
       list.append(el("li", { class: "press-none" }, "기사와 매거진 소식이 올라오면 여기에 링크돼요."));
       return;

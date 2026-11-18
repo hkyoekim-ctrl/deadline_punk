@@ -169,14 +169,15 @@ window.MP_CONFIG = {
     ]
   },
 
-  // 기사·매거진 소식: 올라오면 아래 형식으로 한 줄씩 추가하세요(날짜가 최신인 순서로 보입니다). 비어 있으면 안내 문구가 보여요.
+  // 기사·매거진 소식: 올라오면 아래 형식으로 한 줄씩 추가하세요(여기 적은 순서대로 보입니다). 비어 있으면 안내 문구가 보여요.
   // 예) { kind: "기사"(또는 "from. 불과사이"), date: "2026-11-25", source: "매체 이름", title: "기사 제목", url: "https://..." }
   news: {
     items: [
       { kind: "기사", date: "2026-11-18", source: "매일신문", title: "마감에 쫓기는 작가들, 이번엔 펑크록으로 달린다…밴드 '불과사이' 첫 싱글", url: "https://www.imaeil.com/page/view/2026111815045651233" },
       { kind: "기사", date: "2026-11-18", source: "스포츠한국", title: "작가들이 만든 펑크록 밴드가 왔다 ‘불과사이’", url: "https://sports.hankooki.com/news/articleView.html?idxno=6943804" },
+      { kind: "from. 불과사이", character: "drums", date: "2026-11-11", source: "조선일보", title: "[일사일언] 취미는 무능할 수 있는 권리", url: "https://n.news.naver.com/mnews/article/023/0004008887?sid=103" },
       { kind: "from. 불과사이", character: "vocal", source: "당신의책", title: "숟가락도 ‘락’이다", url: "https://yourbook.co.kr/social/details/j6IRgCJMe63cWSehQFzSXA==" },
-      { kind: "from. 불과사이", character: "drums", date: "2026-11-11", source: "조선일보", title: "[일사일언] 취미는 무능할 수 있는 권리", url: "https://n.news.naver.com/mnews/article/023/0004008887?sid=103" }
+      { kind: "from. 불과사이", character: "bass", date: "2026-06-25", source: "경북매일", title: "우리가 같은 취향을 공유할 때", url: "https://www.kbmaeil.com/article/20260622500395" }
     ]
   },
 
