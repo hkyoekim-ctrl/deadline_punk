@@ -184,6 +184,11 @@ const GRAV = 1150, JUMP_V = -365, MAX_SPEED = 300, START_SPEED = 120;
 const LATE_FROM = 13000, LATE_SPAN = 3000, LATE_SPEED = 0.35, LATE_DENSE = 0.3;  // 13km부터 3km에 걸쳐 속도 +35% · 장애물 간격 -30% (한계에 달해 자연스럽게 끝나도록)
 const CALL_FROM = 7000, CALL_GAP = [16, 24];
 const callTime = () => { const d = score(); return d < 8000 ? 4 : d < 9500 ? 5 : 6.5; };  // 7~8km 4초 · 8~9.5km 5초 · 이후 6.5초
+/* 마감 시계 발사 (하얀 화면이 완전히 되는 12.5km부터): 시계가 앞쪽으로 시침을 쏨. 경고선이 먼저 보이고 → 발사.
+   낮은 줄(바닥 근처)은 점프, 높은 줄(펜 높이)은 슬라이드로 피함 */
+const WARP_PRE = 1.5;  // 글리치 단계: 시공간 뒤틀림(점프↔슬라이드 반전) 예고 시간
+const SHOT_FROM = 12500, SHOT_WARN = 0.85, SHOT_SPEED = 520;
+const clockEdge = () => 44 + (1 - Math.max(0, g.gap) / GAP_MAX) * (PX - 38);
 const lateU = () => Math.max(0, Math.min(1, (score() - LATE_FROM) / LATE_SPAN));
 const GAP_MAX = 58, GAP_REGEN = 3, HIT_COST = 22, COFFEE_GAIN = 22;
 const FEVER_NOTES = 30, FEVER_TIME = 5, SWING_TIME = 6, SWING_PTS = 50;
@@ -568,7 +573,7 @@ let prevState = 'play';
 let best = store.get('best', 0);
 let g, p;
 function reset() {
-  g = { sheets: [], storm: null, shield: 0, fx: null, nextCombo: 50, stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: RUSH_EVERY, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
+  g = { sheets: [], storm: null, shield: 0, fx: null, nextCombo: 50, stage: 0, prevStage: null, stageFade: 1, stageMsg: 0, combo: 0, maxCombo: 0, comboPop: 0, nextRush: Infinity, rush: null, rushMsg: 0, rushMsgText: '', t: 0, dist: 0, speed: START_SPEED, gap: GAP_MAX, obs: [], items: [], parts: [], notes: 0, fever: 0, swing: 0, swingT: 0, boost: 0, boostPop: 0,
         nextObs: 220, nextCoffee: 2400 + Math.random() * 1200, shake: 0, dieT: 0, scroll: 0, hits: 0 };
   p = { y: GROUND, vy: 0, ground: true, slide: 0, slideHeld: false, holdJump: false, buf: 0, coyote: 0, inv: 0, anim: 0 };
 }
@@ -596,6 +601,9 @@ const score = () => Math.floor(g.dist / DIST_PER_PT);  // 거리 = 실제로 달
 
 /* ---------------- 입력 ---------------- */
 const practicing = () => state === 'opening' && !!sel.chosen && !sel.open;
+/* 시공간 뒤틀림(글리치 단계): 일정 시간 점프 ↔ 슬라이드 입력이 서로 바뀜. 누른 시점의 동작으로 떼기까지 짝을 맞춤 */
+const warped = () => typeof g !== 'undefined' && !!g && !!g.warp && state === 'play';
+const keyAct = new Map();
 function jumpPress() {
   if (state !== 'play' && !practicing()) return;
   p.holdJump = true; p.buf = 0.12; p.press = true;
@@ -619,9 +627,9 @@ addEventListener('keydown', e => {
     if (state === 'title') return startOpening();
     if (state === 'opening') { if (sel.open) return pickChar(sel.idx); if (!practicing()) return; }
     if (state === 'over' && k === 'Space') return startGame();
-    jumpPress();
+    const a = warped() ? 'slide' : 'jump'; keyAct.set(k, a); if (a === 'jump') jumpPress(); else slidePress();
   } else if (k === 'ArrowDown' || k === 'KeyS') {
-    e.preventDefault(); if (!e.repeat) slidePress();
+    e.preventDefault(); if (!e.repeat) { const a = warped() ? 'jump' : 'slide'; keyAct.set(k, a); if (a === 'jump') jumpPress(); else slidePress(); }
   } else if ((k === 'ArrowLeft' || k === 'ArrowRight') && sel.open) {
     e.preventDefault(); moveSel(k === 'ArrowLeft' ? -1 : 1);
   } else if (k === 'Enter' && sel.open) {
@@ -634,8 +642,9 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => {
   const k = e.code;
-  if (k === 'Space' || k === 'ArrowUp' || k === 'KeyW') jumpRelease();
-  if (k === 'ArrowDown' || k === 'KeyS') slideRelease();
+  const a = keyAct.get(k); keyAct.delete(k);
+  if (k === 'Space' || k === 'ArrowUp' || k === 'KeyW') { if (a === 'slide') slideRelease(); else jumpRelease(); }
+  if (k === 'ArrowDown' || k === 'KeyS') { if (a === 'jump') jumpRelease(); else slideRelease(); }
 });
 // 터치: 탭 = 점프, 아래로 스와이프 = 슬라이드
 const touches = new Map();
@@ -645,15 +654,17 @@ cv.addEventListener('pointerdown', e => {
   if (state !== 'play' && !practicing()) return;
   const r = cv.getBoundingClientRect();
   const left = false;   // 탭 = 점프(화면 어디든), 아래로 스와이프 = 슬라이드
-  touches.set(e.pointerId, { y: e.clientY, kind: left ? 'slide' : 'jump', swiped: false, t0: performance.now(), gy: p.y, gnd: p.ground || p.coyote > 0 });
-  if (left) slidePress(); else jumpPress();
+  const wp = warped();  // 뒤틀림 중엔 탭 = 슬라이드, 아래 스와이프 = 점프
+  touches.set(e.pointerId, { y: e.clientY, kind: (left || wp) ? 'slide' : 'jump', warp: wp, swiped: false, t0: performance.now(), gy: p.y, gnd: p.ground || p.coyote > 0 });
+  if (left || wp) slidePress(); else jumpPress();
 });
 cv.addEventListener('pointermove', e => {
   const t = touches.get(e.pointerId); if (!t || t.swiped) return;
   const r = cv.getBoundingClientRect();
   if (e.clientY - t.y > r.height * 0.06) {
     t.swiped = true;
-    if (t.kind === 'jump') {
+    if (t.warp) { slideRelease(); t.kind = 'jump'; jumpPress(); }
+    else if (t.kind === 'jump') {
       jumpRelease(); t.kind = 'slide';
       // 스와이프였다면 pointerdown 에서 일으킨 점프를 취소 (땅에서 막 떴을 때만)
       if (t.gnd && !p.air2 && performance.now() - t.t0 < 500) { p.buf = 0; p.press = false; if (!p.ground && p.y > t.gy - 40) { p.y = t.gy; p.vy = 0; p.ground = true; } }
@@ -1003,14 +1014,19 @@ setMuted(muted);
 
 /* ---------------- 스폰 ---------------- */
 const rnd = (a, b) => a + Math.random() * (b - a);
+const STAMP_FROM = 5000, PEN2_FROM = 9000, PEN2_GAP = 190;  // 도장: 5km부터 일반 장애물 · 연달아 두 번 날아오는 펜: 9km부터
 function spawnObstacle() {
   const t = g.t, x = W + 12;
   // 시안 생성 확률: 서류 .26 · 의자 .16 · 메일 .24 · 빨간 펜 .12 · 책더미 .10(8초 이후) · 나머지는 음표 줄만
-  const table = [['papers', .26], ['chair', .16], ['mail', .24], ['pen', .12], ['books', t > 8 ? .10 : 0], ['notes', .12]];
+  const table = [['papers', .26], ['chair', .16], ['mail', .24], ['pen', .12], ['books', t > 8 ? .10 : 0], ['notes', .12], ['stamp', score() >= STAMP_FROM ? .13 : 0], ['pen2', score() >= PEN2_FROM ? .12 : 0]];
   let k = Math.random() * table.reduce((a, e) => a + e[1], 0), type = 'notes';
   for (const [n, wt] of table) { if ((k -= wt) < 0) { type = n; break; } }
   let w = 0;
   if (type === 'papers') { g.obs.push({ type, x, y: GROUND - 20, w: 16, h: 20 }); w = 16; }
+  else if (type === 'pen2') {  // 펜이 연달아 두 번: 한 번 숙이고 끝이 아니라 곧바로 다시 숙이거나(또는 한 번에 크게 점프해서) 넘어야 함
+    g.obs.push({ type: 'pen', x, y: GROUND - 23, w: 22, h: 7 }, { type: 'pen', x: x + PEN2_GAP, y: GROUND - 23, w: 22, h: 7 }); w = PEN2_GAP + 22;
+  }
+  else if (type === 'stamp') { g.obs.push({ type: 'stamp', stamp: true, raw: true, x, y: -40, w: 26, h: 34, live: false }); w = 26; }  // 위에서 내리찍히는 도장: 그림자·낙하를 보고 쿵 한 뒤 점프로 넘기
   else if (type === 'chair') { g.obs.push({ type, x, y: GROUND - 18, w: 16, h: 18 }); w = 16; }
   else if (type === 'mail') { g.obs.push({ type, x, y: GROUND - 26, w: 18, h: 11, base: GROUND - 26, ph: Math.random() * 6 }); w = 18; }
   else if (type === 'pen') { g.obs.push({ type, x, y: GROUND - 23, w: 22, h: 7 }); w = 22; }  // 공중: 숙여서 피함, +90px/s
@@ -1028,9 +1044,9 @@ function spawnObstacle() {
     g.items.push({ type: 'beer', x: x + w / 2 - 6, y: GROUND - 44, ph: 0 });
   } else if (roll >= 0.07 && roll < 0.16 && !g.items.some(i => i.type === 'americano')) {
     g.items.push({ type: 'americano', x: x + w / 2 - 6, y: GROUND - 50, ph: 0 });
-  } else if (type !== 'books' && type !== 'notes' && Math.random() < 0.55) {
+  } else if (type !== 'books' && type !== 'notes' && type !== 'stamp' && Math.random() < 0.55) {
     const n = 3 + Math.floor(Math.random() * 3);
-    const arc = type !== 'mail' && type !== 'pen';
+    const arc = type !== 'mail' && type !== 'pen' && type !== 'pen2';
     for (let i = 0; i < n; i++) {
       const ix = x + w / 2 - (n - 1) * 7 + i * 14;
       const iy = arc ? GROUND - 40 - Math.sin((i + 0.5) / n * Math.PI) * 22 : GROUND - 12;
@@ -1063,9 +1079,11 @@ function burst(x, y, n, cols, sp = 80) {
 function updateRush(dt) {  // 40초마다 '마감 러시': 안내(3단 점프로 에너지 드링크) → 보호막 → 종이 폭풍 (보호막 없이 맞으면 즉사)
   if (!g.rush) {
     if (g.t >= g.nextRush) {
+      g.call = null; g.shotWarn = null;
+      const hadWarp = !!g.warp;
       g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits, drop: 0.5, n: 0 };
       g.obs = g.obs.filter(o => o.x < PX - 40 || o.x > W);  // 화면 앞 장애물 정리
-      bigFx('마감 러시!', '3단 점프로 에너지 드링크를 먹어라!', '#ff6b6b', 2.0); sfx.hit();
+      bigFx('마감 러시!', hadWarp ? '반전 해제! 3단 점프로 에너지 드링크를!' : '3단 점프로 에너지 드링크를 먹어라!', '#ff6b6b', 2.0); sfx.hit();
     }
     return;
   }
@@ -1079,7 +1097,7 @@ function updateRush(dt) {  // 40초마다 '마감 러시': 안내(3단 점프로
   if (g.rush.phase === 'warn') { g.rush.phase = 'on'; g.rush.t = RUSH_TIME; g.storm = { t: STORM_TIME, acc: 0 }; return; }
   const clear = g.hits === g.rush.hits;
   if (clear) { addCombo(5); g.gap = Math.min(GAP_MAX + 10, g.gap + 10); g.rushMsg = 1.8; g.rushMsgText = 'RUSH CLEAR!'; sfx.coffee(); }
-  g.rush = null; g.nextRush += RUSH_EVERY; g.nextObs = Math.max(g.nextObs, g.dist + 120);
+  g.rush = null; g.nextRush = score() >= 12000 ? g.t + 40 : Infinity; g.nextObs = Math.max(g.nextObs, g.dist + 120);
 }
 function update(dt) {
   g.t += dt;
@@ -1093,11 +1111,33 @@ function update(dt) {
   g.dist += dx; g.scroll += dx;
   if (g.comboPop > 0) g.comboPop -= dt;
   { const ns = stageOf(score());
-    if (ns > g.stage && stageReady(ns)) { g.prevStage = g.stage; g.stage = ns; g.stageFade = 0; g.stageMsg = 3; sfx.coffee(); }
+    if (ns > g.stage && stageReady(ns)) { g.prevStage = g.stage; g.stage = ns; g.stageFade = 0; g.stageMsg = 3; sfx.coffee();
+      if (!g.skipRush) g.nextRush = g.t;  // 단계가 바뀔 때 배경이 바뀌면서 마감 러시가 자연스럽게 시작
+      g.skipRush = false; }
+    { const si = g.stage, mids = {6: 12000};  // 러시: 단계 시작(1,2.5,4,6.5,8.5,11km) + 12km, 이후 40초마다
+      if (mids[si] && score() >= mids[si] && g.midRush !== si && !g.rush && !g.storm) { g.midRush = si; if (g.nextRush === Infinity) g.nextRush = g.t; } }
     if (g.stageFade < 1) g.stageFade = Math.min(1, g.stageFade + dt / 1.5);
     if (g.stageMsg > 0) g.stageMsg -= dt; }
   if (g.rushMsg > 0) g.rushMsg -= dt;
   updateRush(dt);
+  if (g.stage === 5) {  // 시공간 뒤틀림: 글리치 단계 내내 점프↔슬라이드 반전. 마감 러시(에너지 드링크 3단 점프) 동안만 잠시 풀림
+    if (g.rush || g.storm) { g.warp = null; g.warpPre = 0; }
+    else if (!g.warp && !(g.warpPre > 0)) {
+      g.warpPre = g.warpSeen ? 1.0 : WARP_PRE;
+      if (!g.warpSeen) { g.warpSeen = true; bigFx('시공간이 뒤틀린다!', '점프 ↔ 슬라이드가 서로 바뀐다', '#7df9ff', 2.2); sfx.hit(); g.shake = Math.max(g.shake, 0.15); }
+    } else if (g.warpPre > 0) { g.warpPre -= dt; if (g.warpPre <= 0) g.warp = { t: 0 }; }
+    if (g.warp) g.warp.t += dt;
+  } else if (g.warp || g.warpPre > 0) { g.warp = null; g.warpPre = 0; }
+  if (score() >= SHOT_FROM && !g.rush && !g.storm) {
+    if (g.shotNext == null) g.shotNext = g.t + 3;
+    if (g.shotWarn) {
+      g.shotWarn.t -= dt;
+      if (g.shotWarn.t <= 0) {
+        g.obs.push({ type: 'shot', shot: true, raw: true, passed: true, x: clockEdge(), y: g.shotWarn.y - 2, w: 24, h: 4, vx: SHOT_SPEED });
+        sfx.hit(); g.shake = Math.max(g.shake, 0.06); g.shotWarn = null; g.shotNext = g.t + rnd(2.0, 3.2);
+      }
+    } else if (g.t >= g.shotNext && !g.call) g.shotWarn = { t: SHOT_WARN, y: Math.random() < 0.5 ? GROUND - 6 : GROUND - 18 };
+  } else g.shotWarn = null;
   { // 편집자 독촉 전화: 7km부터 가끔, 6.5초 동안 길목의 장애물이 가려졌다가 사라짐 (끌 수 없음)
     if (g.call) { g.call.t += dt; if ((g.call.buzz -= dt) <= 0) { sfx.buzz(); g.call.buzz = 0.85; } if (g.call.t >= g.call.dur) { g.call = null; g.nextCall = g.t + rnd(CALL_GAP[0], CALL_GAP[1]); } }
     else if (score() >= CALL_FROM && !g.rush && !g.storm) {
@@ -1134,21 +1174,27 @@ function update(dt) {
   const sb = swingBox();
   for (const o of g.obs) {
     o.x -= dx;
+    if (o.shot) o.x += dx + o.vx * dt;
     const late = Math.min(60, Math.max(0, g.t - 60) * 1.2);
     if (o.storm) o.x -= STORM_EXTRA * dt;
     if (o.type === 'pen') o.x -= (PEN_EXTRA + late) * dt;
     if (o.type === 'chair') { o.x -= (CHAIR_EXTRA + late / 2) * dt; o.roll = (o.roll || 0) + dt; }
+    if (o.stamp && !o.live) {
+      const trig = PX + 16 + g.speed * 0.3, pr = Math.max(0, Math.min(1, 1 - (o.x - trig) / (g.speed * 0.35)));
+      o.y = -40 + (GROUND - 34 + 40) * pr * pr;
+      if (o.x <= trig) { o.live = true; o.y = GROUND - 34; sfx.hit(); g.shake = Math.max(g.shake, 0.22); burst(o.x + 13, GROUND - 2, 14, ['#f7f1e3', '#e63946', '#ffd23f'], 120); }
+    }
     if (o.type === 'mail') o.y = o.base + Math.round(Math.sin(g.t * 5 + o.ph) * 2);
-    if (sb && !o.hit) {  // 악기 휘두르기: 닿는 장애물 파괴 +50
-      const hb = o.storm ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y);
+    if (sb && !o.hit && !(o.stamp && !o.live)) {  // 악기 휘두르기: 닿는 장애물 파괴 +50
+      const hb = (o.storm || o.raw) ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y);
       if (overlap(sb, hb)) {
         o.hit = true; o.x = -999; addCombo(); sfx.hit(); g.shake = 0.1;
         burst(hb.x + hb.w / 2, hb.y + hb.h / 2, 18, ['#ffffff', '#b9b3d6', '#ffd23f'], 150);
         continue;
       }
     }
-    if (!o.hit && (p.inv <= 0 || g.fever > 0) && g.shield <= 0) {
-      const hb = o.storm ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : ART.ok ? hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y) : { x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 3 };
+    if (!o.hit && !(o.stamp && !o.live) && (p.inv <= 0 || g.fever > 0) && g.shield <= 0) {
+      const hb = (o.storm || o.raw) ? { x: o.x + 1, y: o.y + 1, w: o.w - 2, h: o.h - 2 } : ART.ok ? hbox(o.type === 'papers' ? 'paper' : o.type, o.x, o.y) : { x: o.x + 2, y: o.y + 2, w: o.w - 4, h: o.h - 3 };
       if (overlap(pb, hb) && g.fever > 0) {  // 피버 중엔 장애물을 부숨
         o.hit = true; o.x = -999; addCombo(); sfx.note();
         burst(PX + 16, pb.y + 8, 16, ['#ffd23f', '#ff3b6b', '#ffffff'], 140);
@@ -1159,7 +1205,7 @@ function update(dt) {
     }
   }
   for (const o of g.obs) if (!o.hit && !o.passed && o.x + o.w < PX) { o.passed = true; addCombo(); }  // 무사히 넘김
-  g.obs = g.obs.filter(o => o.x > -40);
+  g.obs = g.obs.filter(o => o.x > -40 && o.x < W + 80);
 
   // 아이템
   for (const it of g.items) {
@@ -1522,12 +1568,71 @@ function drawWind() {  // 종이 폭풍: 파란 바람줄기가 오른쪽에서 
   ctx.globalAlpha = 1;
   for (const q of g.sheets) drawSheet(q.x, q.y, q.w, q.h, q.rot, q.c);  // 화면 앞쪽을 스쳐 가는 큰 종이(판정 없음)
 }
+function drawStamp(o) {  // 도장: 빨간 나무 도장(둥근 손잡이 + "수정" 몸통). 내려오기 전엔 ⚠ 경고 + 그림자, 박히면 바닥에 빨간 "수정" 자국
+  const x = Math.round(o.x), y = Math.round(o.y), trig = PX + 16 + g.speed * 0.3;
+  const pr = o.live ? 1 : Math.max(0, Math.min(1, 1 - (o.x - trig) / (g.speed * 0.35)));
+  const far = Math.max(0, Math.min(1, 1 - (o.x - trig) / 200)), blink = Math.floor(g.t * 10) % 2;
+  const OUT = '#2a0f0a', DK = '#7a2418', MD = '#b8432f', LT = '#d9674f';
+  // 그림자 + 경고 삼각형
+  ctx.globalAlpha = o.live ? 0.5 : (0.25 + 0.5 * far) * (blink ? 1 : 0.7);
+  ctx.fillStyle = '#05030b'; ctx.fillRect(x - 2, GROUND - 2, 30, 3); ctx.globalAlpha = 1;
+  if (!o.live) {
+    const ty = GROUND - 26, cx = x + 13;
+    ctx.globalAlpha = blink ? 1 : 0.55;
+    ctx.fillStyle = '#e63946';
+    for (let r = 0; r < 12; r++) { const hw = Math.floor(r / 2) + 1; ctx.fillRect(cx - hw, ty + r, hw * 2 + 1, 1); }
+    ctx.fillStyle = '#1a1423'; ctx.fillRect(cx, ty + 4, 1, 4); ctx.fillRect(cx, ty + 9, 1, 1);
+    ctx.fillStyle = '#ffe9e9'; ctx.fillRect(cx, ty + 5, 1, 3); ctx.fillRect(cx, ty + 9, 1, 1);
+    ctx.globalAlpha = 1;
+    if (pr > 0 && pr < 1) {  // 낙하 속도선
+      ctx.fillStyle = '#f7f1e3';
+      for (let i = 0; i < 4; i++) { ctx.globalAlpha = 0.18 + 0.12 * (i % 2); ctx.fillRect(x + 4 + i * 6, y - 18 - (i % 2) * 8, 1, 16 + (i % 2) * 8); }
+      ctx.globalAlpha = 1;
+    }
+  }
+  // 도장 본체
+  ctx.fillStyle = OUT; ctx.fillRect(x + 8, y, 10, 9); ctx.fillRect(x + 10, y - 1, 6, 1);      // 둥근 손잡이
+  ctx.fillStyle = MD; ctx.fillRect(x + 9, y + 1, 8, 7); ctx.fillRect(x + 10, y, 6, 1);
+  ctx.fillStyle = LT; ctx.fillRect(x + 10, y + 1, 3, 3);
+  ctx.fillStyle = OUT; ctx.fillRect(x + 10, y + 9, 6, 11);                                      // 목
+  ctx.fillStyle = DK; ctx.fillRect(x + 11, y + 9, 4, 11); ctx.fillStyle = MD; ctx.fillRect(x + 11, y + 9, 2, 11);
+  ctx.fillStyle = OUT; ctx.fillRect(x, y + 20, 26, 14);                                         // 몸통
+  ctx.fillStyle = MD; ctx.fillRect(x + 1, y + 21, 24, 11);
+  ctx.fillStyle = LT; ctx.fillRect(x + 1, y + 21, 24, 1);
+  ctx.fillStyle = DK; ctx.fillRect(x + 1, y + 32, 24, 1);
+  ktextOutlined('수정', x + 13, y + 22, '#5a1a10', 8, '#d9674f');  // textBaseline=top → 몸통(y+21~32) 안쪽 정중앙
+  if (o.live) {  // 바닥에 남는 빨간 "수정" 자국
+    const mx = x + 13, my = GROUND + 8;
+    ctx.globalAlpha = 0.85; ctx.fillStyle = '#e63946';
+    ctx.fillRect(mx - 12, my - 6, 24, 1); ctx.fillRect(mx - 12, my + 6, 24, 1); ctx.fillRect(mx - 12, my - 6, 1, 13); ctx.fillRect(mx + 11, my - 6, 1, 13);
+    ktextOutlined('수정', mx, my - 3, '#e63946', 8, 'rgba(0,0,0,0)');  // 테두리(my-6~my+6) 안쪽
+    ctx.globalAlpha = 1;
+  }
+}
+function drawShot(o) {  // 시계가 쏜 시침: 붉은 바늘 + 흰 끝 + 꼬리
+  const x = Math.round(o.x), y = Math.round(o.y);
+  ctx.globalAlpha = 0.35; ctx.fillStyle = '#e63946'; ctx.fillRect(x - 22, y + 1, 22, 2); ctx.globalAlpha = 1;
+  ctx.fillStyle = '#1a1423'; ctx.fillRect(x - 1, y - 1, o.w + 2, o.h + 2);
+  ctx.fillStyle = '#e63946'; ctx.fillRect(x, y, o.w - 6, o.h);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(x + o.w - 6, y, 6, o.h);
+}
+function drawShotWarn() {  // 경고선: 시계에서 오른쪽 끝까지 깜빡이는 점선 + 발사 직전 느낌표
+  const w = g.shotWarn; if (!w) return;
+  const blink = Math.floor(g.t * 12) % 2, ex = Math.round(clockEdge()), y = Math.round(w.y);
+  ctx.globalAlpha = blink ? 0.9 : 0.45; ctx.fillStyle = '#e63946';
+  for (let x = ex + 10; x < W; x += 8) ctx.fillRect(x, y - 1, 5, 2);
+  ctx.globalAlpha = 1;
+  ktextOutlined('!', ex + 12, y - 12, blink ? '#ffffff' : '#e63946', 12, '#1a1423');
+}
 function drawObstacle(o) {
+  if (o.shot) { drawShot(o); return; }
+  if (o.stamp) { drawStamp(o); return; }
   const x = Math.round(o.x), y = Math.round(o.y);
   if (o.storm) { drawSheet(o.x + o.w / 2, o.y + o.h / 2, o.w, o.h, o.rot0 + g.t * o.spin, o.c); return; }
   if (ART.ok) {
-    if (o.type === 'papers') spr('paper', x, y);
-    else if (o.type === 'chair') spr('chair', x, y + (Math.floor((o.roll || 0) * 14) % 2));  // 덜컹덜컹 굴러옴
+    if (o.type === 'papers') {
+      spr('paper', x, y);
+    } else if (o.type === 'chair') spr('chair', x, y + (Math.floor((o.roll || 0) * 14) % 2));  // 덜컹덜컹 굴러옴
     else if (o.type === 'mail') spr('mail', x, y);
     else if (o.type === 'pen' || o.type === 'books') spr(o.type, x, y);
     return;
@@ -1888,7 +1993,18 @@ function drawCall() {  // 독촉 전화: 오프닝의 폰처럼 세로로 크게
   ktextOutlined(line, bx + bw / 2, by + 11, '#1a1423', 11, '#f7f1e3');
   ctx.globalAlpha = 1;
 }
+function drawWarp() {  // 뒤틀림: 청록/분홍 지직선 + 안내 문구
+  if (!g.warp && !(g.warpPre > 0)) return;
+  const on = !!g.warp, f = Math.floor(g.t * 14);
+  ctx.globalAlpha = on ? 0.14 : 0.15;
+  for (let i = 0; i < (on ? 3 : 5); i++) {
+    const sy = ((f * 37 + i * 53) % (GROUND - 8)), sh = 3 + ((f + i * 7) % 9), sx = ((f * 71 + i * 29) % 80) - 20;
+    ctx.fillStyle = i % 2 ? '#00e5ff' : '#ff2bd6'; ctx.fillRect(sx, sy, W - sx - ((f * 13 + i * 17) % 90), sh);
+  }
+  ctx.globalAlpha = 1;
+}
 function drawCombo() {
+  drawWarp();
   drawCall();
   drawBigFx(Math.max(0, Math.min(1 / 30, (performance.now() - (drawCombo.last || performance.now())) / 1000))); drawCombo.last = performance.now();
   if (g.combo >= 3) {  // 왼쪽 위 기록 아래
@@ -1920,7 +2036,12 @@ function drawHUD() {
   ctx.fillStyle = '#3b2c55'; ctx.fillRect(bx, by, bw, 5);
   ctx.fillStyle = ratio < 0.4 ? (Math.floor(g.t * 8) % 2 ? '#e63946' : '#ff3d7f') : '#ffd23f';
   ctx.fillRect(bx, by, Math.round(bw * ratio), 5);
-  let row = 25;
+  const warpOn = !!g.warp || g.warpPre > 0;
+  if (warpOn) {  // MUSIC POWER 게이지 바로 아래
+    const blink = Math.floor(g.t * 6) % 2;
+    ktextOutlined(g.warp ? '점프 ↔ 슬라이드 반전!' : '곧 뒤틀린다…', bx + bw / 2, 22, blink ? '#7df9ff' : '#ff6bdb', 9, '#1a1423');
+  }
+  let row = warpOn ? 36 : 25;
   if (g.swing > 0) {
     text(ctx, 'ROCK!', bx - 24, row, Math.floor(g.t * 8) % 2 ? '#ffffff' : '#ffd23f');
     ctx.fillStyle = '#1a1423'; ctx.fillRect(bx - 1, row - 1, bw + 2, 7);
@@ -1978,6 +2099,7 @@ function render(t) {
   drawParts();
   drawWind();
   drawDeadline(edge, t, g.gap / GAP_MAX < 0.4 || state === 'dying' || state === 'over');
+  drawShotWarn();
   ctx.restore();
   if (!pre) drawHUD();
   if (state === 'play' && goT > 0) {
