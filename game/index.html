@@ -590,8 +590,8 @@ function addCombo(n = 1) {
   g.combo += n; if (g.combo > g.maxCombo) g.maxCombo = g.combo; g.comboPop = 0.35;
   if (g.combo >= g.nextCombo) {  // 콤보 이벤트: 마감 게이지 회복 + 큰 글씨
     const hit = g.combo; g.nextCombo = nextMilestone(g.combo);
-    g.gap = Math.min(GAP_MAX + 10, g.gap + 12); if (!g.rush && !g.storm) g.shield = Math.max(g.shield, COMBO_SHIELD);  // 러시 중에는 콤보 보호막 없음(에너지 드링크 규칙 유지)
-    if (!g.rush) bigFx(`${hit} COMBO!`, '딱 한 번만 제게 기회를 주세요~', '#ff3d7f');
+    g.gap = Math.min(GAP_MAX + 10, g.gap + 12); g.shield = Math.max(g.shield, COMBO_SHIELD);
+    bigFx(`${hit} COMBO!`, '딱 한 번만 제게 기회를 주세요~', '#ff3d7f');
     sfx.coffee(); g.shake = 0.12; burst(PX + 6, GROUND - 14, 18, ['#ffd23f', '#ff3d7f', '#ffffff'], 110);
   }
 }
@@ -1081,7 +1081,6 @@ function updateRush(dt) {  // 40초마다 '마감 러시': 안내(3단 점프로
     if (g.t >= g.nextRush) {
       g.call = null; g.shotWarn = null;
       const hadWarp = !!g.warp;
-      g.shield = 0;  // 러시 시작 전에 남은 콤보 보호막 제거
       g.rush = { phase: 'warn', t: RUSH_WARN, hits: g.hits, drop: 0.5, n: 0 };
       g.obs = g.obs.filter(o => o.x < PX - 40 || o.x > W);  // 화면 앞 장애물 정리
       bigFx('마감 러시!', hadWarp ? '반전 해제! 3단 점프로 에너지 드링크를!' : '3단 점프로 에너지 드링크를 먹어라!', '#ff6b6b', 2.0); sfx.hit();
@@ -1091,8 +1090,8 @@ function updateRush(dt) {  // 40초마다 '마감 러시': 안내(3단 점프로
   g.rush.t -= dt;
   if (g.rush.phase === 'warn') {
     g.rush.drop -= dt;
-    if (g.rush.drop <= 0 && g.shield <= 0 && g.rush.n < 2) { g.items.push({ type: 'energy', x: W + 12, y: GROUND - DRINK_Y - 86, ph: 0 }); g.rush.n++; g.rush.drop = 1.3; }  // 에너지 드링크는 러시당 딱 2개
-    if (g.shield > 0 && g.rush.t > 0.8) g.rush.t = 0.8;  // 마셨으면 곧바로 폭풍 시작
+    if (g.rush.drop <= 0 && !g.rush.drank && g.rush.n < 2) { g.items.push({ type: 'energy', x: W + 12, y: GROUND - DRINK_Y - 86, ph: 0 }); g.rush.n++; g.rush.drop = 1.3; }  // 에너지 드링크는 러시당 딱 2개
+    if (g.rush.drank && g.rush.t > 0.8) g.rush.t = 0.8;  // 마셨으면 곧바로 폭풍 시작
   }
   if (g.rush.t > 0) return;
   if (g.rush.phase === 'warn') { g.rush.phase = 'on'; g.rush.t = RUSH_TIME; g.storm = { t: STORM_TIME, acc: 0 }; return; }
@@ -1219,7 +1218,7 @@ function update(dt) {
         addCombo(); sfx.note(); burst(it.x + 4, it.y + 4, 5, ['#ffd23f'], 50);
         if (g.fever <= 0 && ++g.notes >= FEVER_NOTES) { g.notes = 0; g.fever = FEVER_TIME; bigFx('FEVER!', '1,2,3, 튀어!', '#ff3d7f', 2.0); sfx.coffee(); g.shake = 0.15; }
       }
-      else if (it.type === 'energy') { g.shield = SHIELD_TIME; bigFx('POWER UP!', '보호막 ON! 곧 종이 폭풍이 온다', '#7df9ff', 1.6); sfx.coffee(); g.shake = 0.1; burst(it.x + 5, it.y + 6, 16, ['#7df9ff', '#ffffff', '#ffd23f'], 110); }
+      else if (it.type === 'energy') { g.shield = SHIELD_TIME; if (g.rush) g.rush.drank = true; bigFx('POWER UP!', '보호막 ON! 곧 종이 폭풍이 온다', '#7df9ff', 1.6); sfx.coffee(); g.shake = 0.1; burst(it.x + 5, it.y + 6, 16, ['#7df9ff', '#ffffff', '#ffd23f'], 110); }
       else if (it.type === 'beer') { g.swing = SWING_TIME; g.swingT = 0; bigFx('ROCK!!', '음악의 힘으로 다 때려부수자!', '#ffd23f', 2.0); sfx.coffee(); g.shake = 0.12; burst(it.x + 6, it.y + 5, 16, ['#ffd23f', '#ffffff', '#f2a93b'], 100); }
       else if (it.type === 'americano') { g.boost = BOOST_TIME; g.boostPop = 1.2; sfx.coffee(); burst(it.x + 6, it.y + 6, 12, ['#6b3f22', '#f7f1e3', '#9ad7ff'], 80); }
     }
