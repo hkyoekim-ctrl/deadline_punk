@@ -167,7 +167,6 @@ window.MP_CONFIG = {
     // 지난 공연은 자동으로 아래로 내려가 흐리게 표시됩니다.
     // 예) { date: "2026-12-05", time: "19:00", title: "공연 이름", venue: "공연장 이름", place: "서울 마포구", note: "한 줄 메모(선택)", url: "예매·안내 링크(선택)", linkLabel: "예매하기" }
     items: [
-      { date: "2026-11-19", time: "20:00", title: "GSOD LIVE", venue: "공상온도", place: "홍대" },
       { date: "2026-11-20", time: "19:00", title: "ROCKERS ON FRIDAY", venue: "클럽 빅팀" },
       { date: "2026-12-28", time: "19:30", title: "불과(1년)사이 연말파티", venue: "허밋", place: "합정" }
     ]

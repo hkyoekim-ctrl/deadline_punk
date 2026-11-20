@@ -230,7 +230,7 @@
     const kst = (t) => new Date(t).toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" }); // YYYY-MM-DD
     const todayStr = kst(Date.now());
     const gigs = ((C.schedule && C.schedule.items) || []).filter((g) => g && g.date).map((g) => ({ ...g, kind: "gig" }));
-    const events = [...gigs, { kind: "release", date: kst(C.single.releaseAt), title: "마감펑크 발매", note: "모든 음원 사이트에서 만나요" }]
+    const events = [...gigs]
       .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
 
     function row(e) {
