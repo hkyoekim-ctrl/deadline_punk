@@ -136,13 +136,17 @@ window.MP_CONFIG = {
     // 스트리밍 링크. 비어 있으면 "준비 중"으로 표시됩니다.
     // icon: img/stream/ 의 로고 파일, color: 아이콘 배경색
     streaming: [
-      { label: "YouTube Music", icon: "img/stream/youtubemusic.svg", color: "#FF0000", url: "" },
-      { label: "Apple Music", icon: "img/stream/applemusic.svg", color: "#FA243C", url: "" },
-      { label: "멜론", icon: "img/stream/melon.svg", color: "#00CD3C", url: "" },
-      { label: "Spotify", icon: "img/stream/spotify.svg", color: "#1DB954", url: "" }
+      { label: "YouTube Music", icon: "img/stream/youtubemusic.svg", color: "#FF0000", url: "https://www.youtube.com/watch?v=txKm5XUh9Og&list=RDtxKm5XUh9Og&start_radio=1" },
+      { label: "Spotify", icon: "img/stream/spotify.svg", color: "#1DB954", url: "https://open.spotify.com/intl-ko/album/2MbruDnyc7wT4wX56uND58" },
+      { label: "Apple Music", icon: "img/stream/applemusic.png", full: true, color: "#FA243C", url: "https://music.apple.com/kr/album/deadline-punk-single/6835796042" },
+      { label: "멜론", icon: "img/stream/melon.svg", color: "#00CD3C", url: "https://www.melon.com/song/detail.htm?songId=603995741" },
+      { label: "지니", icon: "img/stream/genie.png", color: "#FFFFFF", url: "https://www.genie.co.kr/detail/albumInfo?axnm=88471559" },
+      { label: "벅스", icon: "img/stream/bugs.png", full: true, color: "#F5400C", url: "https://music.bugs.co.kr/album/20856330" },
+      { label: "FLO", icon: "img/stream/flo.png", full: true, color: "#3D3DF5", url: "https://www.music-flo.com/detail/album/467452406/albumtrack" },
+      { label: "VIBE", icon: "img/stream/vibe.png", full: true, color: "#E8265E", url: "https://vibe.naver.com/album/39256096" }
     ],
     // 뮤직비디오 유튜브 영상 ID (https://youtu.be/XXXX 의 XXXX 부분)
-    youtubeId: ""
+    youtubeId: "kjsGwgCUU-U"
   },
 
   support: {

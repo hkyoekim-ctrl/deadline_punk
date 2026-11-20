@@ -48,7 +48,7 @@
   C.single.streaming.forEach((s) => {
     const ready = s.url && !isPlaceholder(s.url);
     const logo = s.icon
-      ? el("img", { src: s.icon, alt: "", class: s.wide ? "wide" : null })
+      ? el("img", { src: s.icon, alt: "", class: s.full ? "full" : s.wide ? "wide" : null })
       : el("span", { class: "mark" }, s.mark || s.label);
     const tile = el("a", {
       class: "stream-tile", style: `--tile:${s.color || "#333"}`,
@@ -87,19 +87,28 @@
     };
     if (!Number.isNaN(target)) tick();
   }
-  if (vid && !window.MP_PREVIEW) {
-    mv.append(el("iframe", {
-      src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(vid)}`,
-      title: "마감펑크 뮤직비디오",
-      allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-      allowfullscreen: true, loading: "lazy"
-    }));
+  if (vid) {
+    // 누르기 전에는 썸네일만 보여 주고, 눌렀을 때 재생 (게임 소리와 겹치지 않게)
+    const id = encodeURIComponent(vid);
+    const facade = el("button", {
+      type: "button", class: "mv-link mv-facade", "aria-label": "마감펑크 뮤직비디오 재생",
+      style: `background-image:url(https://i.ytimg.com/vi/${id}/hqdefault.jpg)`
+    }, el("div", { class: "play", "aria-hidden": "true" }));
+    facade.addEventListener("click", () => {
+      if (window.MP_PREVIEW) { window.open(`https://youtu.be/${id}`, "_blank", "noopener"); return; }
+      mv.replaceChildren(el("iframe", {
+        src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`,
+        title: "마감펑크 뮤직비디오",
+        allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+        allowfullscreen: true
+      }));
+    });
+    mv.append(facade);
   } else {
-    const href = vid ? `https://youtu.be/${encodeURIComponent(vid)}` : null;
-    mv.append(el(href ? "a" : "div", { class: "mv-link", href, target: href ? "_blank" : null, rel: href ? "noopener" : null },
+    mv.append(el("div", { class: "mv-link" },
       el("div", { class: "play", "aria-hidden": "true" }),
       el("strong", {}, "마감펑크 뮤직비디오"),
-      el("span", { class: "placeholder" }, href ? "유튜브에서 보기" : "유튜브 공개 후 이 자리에 영상이 들어갑니다")
+      el("span", { class: "placeholder" }, "유튜브 공개 후 이 자리에 영상이 들어갑니다")
     ));
   }
 

@@ -675,3 +675,23 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .press-item.has-char { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "char meta go" "char name go"; column-gap: 14px; }
 .press-char { grid-area: char; --px: 2; }
 .press-char { animation: none; background-position: calc(-4 * 16px * var(--px)) 0; }
+
+/* 음원 타일 8개: 줄바꿈 허용, 로고가 없는 곳은 글자 마크 */
+.stream-row { flex-wrap: wrap; gap: clamp(14px, 3vw, 26px); row-gap: 22px; }
+.stream-tile { width: clamp(64px, 16vw, 84px); }
+.stream-tile .mark { color: #fff; font-family: "Mulmaru", sans-serif; font-weight: 800; font-size: clamp(0.85rem, 3.4vw, 1.1rem); letter-spacing: 0; }
+
+/* 음원 아이콘 조금 작게 */
+.stream-tile { width: clamp(54px, 13.5vw, 70px); }
+.stream-tile .mark { font-size: clamp(0.75rem, 3vw, 0.95rem); }
+.stream-row { gap: clamp(12px, 2.6vw, 22px); row-gap: 18px; }
+
+/* MV: 눌러서 재생하는 썸네일 */
+.mv-facade { border: 0; width: 100%; cursor: pointer; background-color: #000; background-size: cover; background-position: center; font: inherit; }
+.mv-facade::before { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.28); transition: background 120ms; }
+.mv-facade .play { position: relative; width: 78px; height: 54px; }
+@media (hover: hover) { .mv-facade:hover::before { background: rgba(0,0,0,.1); } }
+.stream-tile { overflow: hidden; }
+.stream-tile img.full { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 600px) { .stream-row { max-width: 300px; margin-inline: auto; } }
+.stream-tile img[src$="genie.png"] { width: 29%; }
