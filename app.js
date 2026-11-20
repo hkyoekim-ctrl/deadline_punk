@@ -224,6 +224,34 @@
     });
   })();
 
+  // ── 발매 팝업: 들어오자마자 한 번 ───────────────
+  (function releasePopup() {
+    if (C.popup && C.popup.enabled === false) return;
+    const KEY = "mp-popup-hide";
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+    try { if (localStorage.getItem(KEY) === today) return; } catch (e) {}
+    const open = C.single.streaming.filter((x) => x.url && !isPlaceholder(x.url));
+    if (!open.length && !C.single.youtubeId) return;
+    if (!(Date.now() >= new Date(C.single.releaseAt).getTime()) && !window.MP_PREVIEW) return; // 발매 전에는 안 띄움
+
+    const close = () => { wrap.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    const hideToday = el("button", { type: "button", class: "pop-text" }, "오늘 하루 보지 않기");
+    hideToday.addEventListener("click", () => { try { localStorage.setItem(KEY, today); } catch (e) {} close(); });
+    const x = el("button", { type: "button", class: "pop-x", "aria-label": "닫기" }, "✕");
+    x.addEventListener("click", close);
+    const wrap = el("div", { class: "pop", role: "dialog", "aria-modal": "true", "aria-label": "마감펑크 발매 안내" },
+      el("div", { class: "pop-card" }, x,
+        el("p", { class: "pop-stamp" }, "OUT NOW"),
+        el("img", { class: "pop-cover", src: "img/cover.jpg", alt: "마감펑크 앨범 커버", width: "160", height: "160" }),
+        el("p", { class: "pop-sub" }, "불과사이의 첫 데뷔 싱글"),
+        el("p", { class: "pop-search" }, "지금 유튜브에서", el("br"), el("b", {}, "불과사이 마감펑크"), "를", el("br"), "검색하세요"),
+        el("div", { class: "pop-foot" }, hideToday)));
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
+    document.addEventListener("keydown", onKey);
+    document.body.append(wrap);
+  })();
+
   // ── 공연 일정: 픽셀 캘린더 ─────────────────────
   (function schedule() {
     const list = $("#gigs");
