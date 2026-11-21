@@ -730,7 +730,8 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 
 /* 공연 아카이브 (지난 공연) */
 .fold { max-width: 640px; margin-top: 36px; }
-.fold { border-top: 3px dashed var(--line); }
+.fold { border: 3px dashed var(--line); padding: 0 14px; }
+.fold[open] { padding-bottom: 12px; }
 .fold summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px; font-family: var(--f-pixel); font-size: 20px; -webkit-font-smoothing: none; }
 .fold summary::-webkit-details-marker { display: none; }
 .fold summary .cnt { color: var(--muted); font-size: 14px; margin-left: 8px; }
@@ -739,7 +740,7 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .fold[open] summary .tog::after { content: " 접기 ▲"; }
 .stubs > li { display: block; }
 .stubs { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 10px; }
-.stub { display: grid; grid-template-columns: 96px minmax(0,1fr); background: color-mix(in srgb, var(--paper) 82%, var(--night)); color: var(--ink); box-shadow: 4px 4px 0 var(--line); position: relative; }
+.stub { display: grid; grid-template-columns: 96px minmax(0,1fr); background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 var(--postit); position: relative; }
 .stub::before, .stub::after { content: ""; position: absolute; left: 90px; width: 12px; height: 12px; border-radius: 50%; background: var(--night); }
 .stub::before { top: -6px; } .stub::after { bottom: -6px; }
 .stub-date { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px 6px; border-right: 3px dashed color-mix(in srgb, var(--ink) 35%, transparent); font-family: var(--f-pixel); -webkit-font-smoothing: none; line-height: 1.2; font-variant-numeric: tabular-nums; }
