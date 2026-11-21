@@ -171,6 +171,32 @@ window.MP_CONFIG = {
     ]
   },
 
+  // 공연 아카이브: 지난 공연 기록. 최신순으로 보이고, url(인스타그램·유튜브 등 기록 링크)이 있으면 줄을 눌러 이동합니다.
+  // 제목은 title(공연 이름)이 있으면 title, 없으면 venue(공연장)이고, 공연장은 제목 아래에 작게 나옵니다.
+  // 예) { date: "2026-12-28", venue: "공연장", title: "공연 이름(선택)", url: "기록 링크(선택)" }
+  archive: {
+    items: [
+      { date: "2026-11-20", venue: "클럽 빅팀", title: "ROCKERS ON FRIDAY vol.110", url: "https://www.instagram.com/p/Df_v7X7FnGk/?img_index=1" },
+      { date: "2026-11-19", venue: "공상온도", title: "GSOD LIVE", url: "https://www.youtube.com/watch?v=UUvUSEGTqEA" },
+      { date: "2026-10-31", venue: "인천맥주 호랑이", title: "", url: "https://www.youtube.com/watch?v=gqD0t6sLByU" },
+      { date: "2026-10-11", venue: "클럽 빅팀", title: "NIGHT OF VICTIM vol.110", url: "https://www.youtube.com/watch?v=JnyhiHyHbbY" },
+      { date: "2026-09-20", venue: "클럽AOR", title: "All of Rock by UNIS", url: "https://www.instagram.com/p/Dc-eX7SzTsg/" },
+      { date: "2026-09-03", venue: "라이브클럽 빵", title: "", url: "https://www.instagram.com/p/Dc0tgS6PjoF/" },
+      { date: "2026-08-16", venue: "클럽 빅팀", title: "NIGHT OF VICTIM vol.104", url: "https://www.instagram.com/p/DcLgcdqnbLv/?img_index=1" },
+      { date: "2026-08-09", venue: "클럽 빅팀", title: "NIGHT OF VICTIM vol.103", url: "https://www.instagram.com/p/DcBL63TR9y6/" },
+      { date: "2026-08-01", venue: "부산 유기체", title: "비수기의 전문가들", url: "https://www.instagram.com/p/DbuO4ezRUS7/" },
+      { date: "2026-07-17", venue: "사운드시티", title: "게릴라 라이브", url: "https://www.youtube.com/watch?v=nB6PdN6Gdsc" },
+      { date: "2026-07-09", venue: "채널1969", title: "목요음악생활", url: "https://www.instagram.com/p/DbARAqsvq1u/" },
+      { date: "2026-07-05", venue: "링크원스테이지", title: "Seoul Vibes Festival", url: "https://www.instagram.com/p/DZoflqWhpJn/" },
+      { date: "2026-05-08", venue: "링크원스테이지", title: "LINK ONE STAGE Vol.6", url: "https://www.instagram.com/p/DYFWwZGkq-8/?img_index=1" },
+      { date: "2026-05-01", venue: "클럽 빅팀", title: "ROCKERS ON FRIDAY vol.87", url: "https://www.youtube.com/watch?v=L47xmvDmins" },
+      { date: "2026-04-17", venue: "클럽 빅팀", title: "ROCKERS ON FRIDAY vol.85", url: "https://www.instagram.com/p/DXawC9OD-vr/" },
+      { date: "2026-03-15", venue: "원픽뮤직", title: "원픽페스티벌", url: "https://www.instagram.com/p/DXeX3AWj4bk/" },
+      { date: "2026-01-29", venue: "채널1969", title: "목요음악생활", url: "https://www.instagram.com/p/DUnNcjCDwBs/?img_index=1" },
+      { date: "2026-01-25", venue: "클럽 빅팀", title: "NIGHT OF VICTIM vol.82", url: "https://www.instagram.com/p/DUk1Hk7j0Bk/?img_index=1" }
+    ]
+  },
+
   // 기사·매거진 소식: 올라오면 아래 형식으로 한 줄씩 추가하세요(여기 적은 순서대로 보입니다). 비어 있으면 안내 문구가 보여요.
   // 예) { kind: "기사"(또는 "from. 불과사이"), date: "2026-11-25", source: "매체 이름", title: "기사 제목", url: "https://..." }
   news: {

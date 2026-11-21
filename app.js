@@ -281,6 +281,32 @@
     events.forEach((e) => list.append(row(e)));
   })();
 
+  // ── 공연 아카이브: 지난 공연 기록 링크 ─────────────
+  (function archive() {
+    const box = $("#archive");
+    const items = ((C.archive && C.archive.items) || []).filter((g) => g && g.date && (g.venue || g.title))
+      .sort((a, b) => b.date.localeCompare(a.date));
+    if (!box || !items.length) return;
+    $("#archive-count").textContent = `${items.length}회`;
+    const list = $("#archive-list");
+    items.forEach((g) => {
+      const wd = ["일", "월", "화", "수", "목", "금", "토"][new Date(Date.UTC(+g.date.slice(0, 4), +g.date.slice(5, 7) - 1, +g.date.slice(8, 10))).getUTCDay()];
+      const ready = g.url && !isPlaceholder(g.url);
+      const body = [
+        el("div", { class: "stub-date" }, el("span", { class: "y" }, g.date.slice(0, 4)), el("span", { class: "md" }, `${g.date.slice(5, 7)}.${g.date.slice(8, 10)}`), el("span", { class: "w" }, wd)),
+        el("div", { class: "stub-body" },
+          el("p", { class: "t" }, g.title || g.venue),
+          ready ? el("span", { class: "go" }, "기록", el("i", {}, " 보기"), " ↗") : null,
+          g.title && g.venue ? el("p", { class: "v" }, g.venue) : null),
+      ];
+      const stub = ready
+        ? el("a", { class: "stub link", href: g.url, target: "_blank", rel: "noopener" }, ...body)
+        : el("div", { class: "stub" }, ...body);
+      list.append(el("li", {}, stub));
+    });
+    box.hidden = false;
+  })();
+
   // ── 후원 ──────────────────────────────────────
   C.support.links.forEach((l) => {
     const title = el("h3"); text(title, l.label);

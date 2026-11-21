@@ -727,3 +727,33 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .pop-sub { font-size: 12px; white-space: nowrap; letter-spacing: 0; }
 .pop-search b { font-size: 1.22em; }
 .pop-sub { font-size: 11.4px; }
+
+/* 공연 아카이브 (지난 공연) */
+.fold { max-width: 640px; margin-top: 36px; }
+.fold { border-top: 3px dashed var(--line); }
+.fold summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px; font-family: var(--f-pixel); font-size: 20px; -webkit-font-smoothing: none; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary .cnt { color: var(--muted); font-size: 14px; margin-left: 8px; }
+.fold summary .tog { font-size: 14px; color: var(--postit); }
+.fold summary .tog::after { content: " 펼치기 ▼"; }
+.fold[open] summary .tog::after { content: " 접기 ▲"; }
+.stubs > li { display: block; }
+.stubs { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 10px; }
+.stub { display: grid; grid-template-columns: 96px minmax(0,1fr); background: color-mix(in srgb, var(--paper) 82%, var(--night)); color: var(--ink); box-shadow: 4px 4px 0 var(--line); position: relative; }
+.stub::before, .stub::after { content: ""; position: absolute; left: 90px; width: 12px; height: 12px; border-radius: 50%; background: var(--night); }
+.stub::before { top: -6px; } .stub::after { bottom: -6px; }
+.stub-date { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px 6px; border-right: 3px dashed color-mix(in srgb, var(--ink) 35%, transparent); font-family: var(--f-pixel); -webkit-font-smoothing: none; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stub-date .y { font-size: 12px; opacity: .65; } .stub-date .md { font-size: 22px; } .stub-date .w { font-size: 12px; }
+.stub-body { padding: 10px 14px; min-width: 0; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 0 10px; align-content: center; }
+.stub-body .t { margin: 0; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.go i { font-style: normal; }
+.stub-body .v { margin: 0; font-size: 13px; color: color-mix(in srgb, var(--ink) 70%, transparent); grid-column: 1 / -1; }
+.go { font: 13px var(--f-pixel); -webkit-font-smoothing: none; color: var(--overdue); white-space: nowrap; }
+.stub:not(.link) .go { color: color-mix(in srgb, var(--ink) 40%, transparent); }
+a.stub { text-decoration: none; transition: transform .12s, box-shadow .12s; }
+a.stub:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--overdue); }
+a.stub:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--overdue); }
+@media (max-width: 560px) {
+  .stub { grid-template-columns: 70px minmax(0,1fr); } .stub::before, .stub::after { left: 64px; }
+  .stub-date .md { font-size: 18px; } .stub-body { padding: 10px 10px; } .stub-body .t { font-size: 15px; } .go i { display: none; }
+}
