@@ -628,7 +628,8 @@ a.stream-tile[href]:active { transform: translateY(3px); box-shadow: 0 2px 0 0 c
 .board tr.tier2 .rank { color: var(--overdue); }
 .board tr.tier3 .rank { color: var(--postit); }
 .board tr.tier4 .rank { color: #7dffb8; }
-.board tr.mine td { background: color-mix(in srgb, var(--paper) 10%, transparent); box-shadow: inset 3px 0 0 var(--paper); }
+.board tr.mine td { background: color-mix(in srgb, var(--paper) 10%, transparent); box-shadow: none; }
+.board tr.mine td:first-child { box-shadow: inset 3px 0 0 var(--paper); }
 
 /* 순위표 페이지 넘기기 (10명씩) */
 .board-pager { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 10px; border-top: 1px dashed var(--line); }
